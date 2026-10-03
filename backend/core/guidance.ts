@@ -6,8 +6,9 @@ import type { ArrowState, Guidance, LatLng, WalkingRoute } from "shared/contract
 // - snap the user onto the route, aim ~25m further along it
 // - arrow state thresholds: within 30 deg = STRAIGHT, 30-135 deg = LEFT/RIGHT, >135 deg = U_TURN
 // - ~10 deg hysteresis at each boundary
-// - off-route: farther than max(30m, 2 x accuracyM) from the path -> caller should reroute
-// - arrived: within ~20m of the destination (final path point)
+// - off-route: farther than max(30m, 2 x accuracyM) from the path
+// - arrived: within ~20m of the destination (final path point), widened to
+//   accuracyM (capped at 50m) when GPS is weak
 
 const LOOKAHEAD_M = 25;
 const STRAIGHT_THRESHOLD_DEG = 30;
@@ -16,6 +17,7 @@ const HYSTERESIS_DEG = 10;
 const MIN_OFF_ROUTE_M = 30;
 const OFF_ROUTE_ACCURACY_MULTIPLIER = 2;
 const ARRIVED_RADIUS_M = 20;
+const MAX_ARRIVED_RADIUS_M = 50;
 
 const EARTH_RADIUS_M = 6371000;
 
@@ -221,6 +223,19 @@ function arrowStateFor(relativeAngleDeg: number, previous?: ArrowState): ArrowSt
   return right ? "RIGHT" : "LEFT";
 }
 
+/**
+ * One guidance tick. Pure: call it on every position/heading update.
+ *
+ * The caller owns timing, since a pure function can't:
+ * - `offRoute` reflects only the current position. Reroute (POST /api/route)
+ *   only after it has stayed true for ~5 s, and at most once every ~15 s.
+ * - Check `arrived` before `arrow`: it can be true while the arrow says U_TURN
+ *   (e.g. just past the store).
+ * - Pass a smoothed heading. Until the compass reports, a non-finite heading
+ *   keeps the previous arrow.
+ *
+ * Never throws: an empty route returns `offRoute: true` so the caller reroutes.
+ */
 export function guide(input: {
   position: LatLng;
   accuracyM: number;
@@ -231,16 +246,37 @@ export function guide(input: {
   const { position, accuracyM, headingDeg, route, previous } = input;
   const path = route.path;
 
+  if (path.length === 0) {
+    return {
+      arrow: previous?.arrow ?? "STRAIGHT",
+      relativeAngleDeg: 0,
+      offRoute: true,
+      arrived: false,
+    };
+  }
+
   const snapped = nearestPointOnPath(position, path);
   const finalPoint = path[path.length - 1];
 
   const offRouteThresholdM = Math.max(MIN_OFF_ROUTE_M, OFF_ROUTE_ACCURACY_MULTIPLIER * accuracyM);
   const offRoute = snapped.distanceToPathM > offRouteThresholdM;
 
-  const arrived = distanceM(position, finalPoint) <= ARRIVED_RADIUS_M;
+  const arrivedRadiusM = Number.isFinite(accuracyM)
+    ? Math.max(ARRIVED_RADIUS_M, Math.min(accuracyM, MAX_ARRIVED_RADIUS_M))
+    : ARRIVED_RADIUS_M;
+  const arrived = distanceM(position, finalPoint) <= arrivedRadiusM;
 
   const target = pointAheadOnPath(path, snapped, LOOKAHEAD_M);
   const bearingToTarget = bearingDeg(position, target);
+  if (!Number.isFinite(headingDeg)) {
+    return {
+      arrow: previous?.arrow ?? "STRAIGHT",
+      relativeAngleDeg: previous?.relativeAngleDeg ?? 0,
+      offRoute,
+      arrived,
+    };
+  }
+
   const relativeAngleDeg = normalizeAngle(bearingToTarget - headingDeg);
 
   const arrow = arrowStateFor(relativeAngleDeg, previous?.arrow);

@@ -354,3 +354,54 @@ test("heading wraparound: heading 350, bearing ~10 -> +20, not -340", () => {
   );
   assert.ok(result.relativeAngleDeg > -180 && result.relativeAngleDeg <= 180);
 });
+
+// --- Degenerate input ---
+
+test("empty route: does not throw, reports offRoute so the caller reroutes", () => {
+  const result = guide({
+    position: { lat: 0, lng: 0 },
+    accuracyM: 5,
+    headingDeg: 0,
+    route: { path: [], distanceM: 0, durationS: 0 },
+    previous: prevWith("LEFT"),
+  });
+  assert.deepEqual(result, { arrow: "LEFT", relativeAngleDeg: 0, offRoute: true, arrived: false });
+});
+
+test("non-finite heading: keeps the previous arrow instead of NaN", () => {
+  const result = guide({
+    position: { lat: 0, lng: 0 },
+    accuracyM: 5,
+    headingDeg: NaN,
+    route: northRoute(),
+    previous: prevWith("RIGHT"),
+  });
+  assert.equal(result.arrow, "RIGHT");
+  assert.ok(Number.isFinite(result.relativeAngleDeg));
+});
+
+// --- Arrival with weak GPS ---
+
+test("arrived: radius widens with weak GPS (accuracyM=40 -> 40m)", () => {
+  const route = eastRoute(2000);
+  const finalPoint = route.path[route.path.length - 1];
+  const result = guide({
+    position: { lat: metersToLatDeg(35), lng: finalPoint.lng },
+    accuracyM: 40,
+    headingDeg: 90,
+    route,
+  });
+  assert.equal(result.arrived, true);
+});
+
+test("arrived: widened radius is capped at 50m", () => {
+  const route = eastRoute(2000);
+  const finalPoint = route.path[route.path.length - 1];
+  const result = guide({
+    position: { lat: metersToLatDeg(60), lng: finalPoint.lng },
+    accuracyM: 200,
+    headingDeg: 90,
+    route,
+  });
+  assert.equal(result.arrived, false);
+});
