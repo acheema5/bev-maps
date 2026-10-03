@@ -93,7 +93,7 @@ export function simulatedWalk(
   if (path.length === 1) {
     return [
       {
-        t: 0,
+        tMs: 0,
         position: path[0],
         accuracyM: simulatedAccuracyM(0),
         headingDeg: 0,
@@ -125,7 +125,7 @@ export function simulatedWalk(
   positions[positions.length - 1] = path[path.length - 1];
 
   const samples: SimSample[] = positions.map((position, i) => ({
-    t: times[i],
+    tMs: times[i],
     position,
     accuracyM: simulatedAccuracyM(i),
     headingDeg: 0,

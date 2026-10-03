@@ -17,9 +17,9 @@ const straightNorthRoute: WalkingRoute = {
 test("simulatedWalk: t starts at 0 and increases monotonically", () => {
   const samples = simulatedWalk(straightNorthRoute);
   assert.ok(samples.length >= 2);
-  assert.equal(samples[0].t, 0);
+  assert.equal(samples[0].tMs, 0);
   for (let i = 1; i < samples.length; i++) {
-    assert.ok(samples[i].t > samples[i - 1].t, `t should increase at index ${i}`);
+    assert.ok(samples[i].tMs > samples[i - 1].tMs, `t should increase at index ${i}`);
   }
 });
 
@@ -50,7 +50,7 @@ test("simulatedWalk: a single-point route (already arrived) returns exactly one 
   };
   const samples = simulatedWalk(arrivedRoute);
   assert.equal(samples.length, 1);
-  assert.equal(samples[0].t, 0);
+  assert.equal(samples[0].tMs, 0);
   assert.deepEqual(samples[0].position, arrivedRoute.path[0]);
 });
 
@@ -65,7 +65,7 @@ test("simulatedWalk: a route shorter than one sample interval still yields a sta
   };
   const samples = simulatedWalk(shortRoute);
   assert.equal(samples.length, 2);
-  assert.equal(samples[0].t, 0);
+  assert.equal(samples[0].tMs, 0);
   assert.deepEqual(samples[1].position, shortRoute.path[1]);
 });
 
@@ -81,7 +81,7 @@ test("simulatedWalk: accuracyM is not a flat constant (simulates GPS jitter) but
 // independent of simulatedWalk's own sampling density.
 function makeTestSamples(count: number, spacingMs: number): SimSample[] {
   return Array.from({ length: count }, (_, i) => ({
-    t: i * spacingMs,
+    tMs: i * spacingMs,
     position: { lat: 37.0 + i * 0.0001, lng: -122.0 },
     accuracyM: 7,
     headingDeg: 0,
@@ -95,20 +95,20 @@ test("playSimulatedWalk: calls onSample once per sample", async () => {
   const stop = playSimulatedWalk(
     samples,
     (sample) => {
-      received.push(sample.t);
+      received.push(sample.tMs);
     },
     { speedMultiplier: 20 } // fast playback for a quick test
   );
 
   // Let the whole walk play out, then stop (idempotent, should be a no-op).
-  const totalDurationMs = samples[samples.length - 1].t / 20 + 50;
+  const totalDurationMs = samples[samples.length - 1].tMs / 20 + 50;
   await new Promise((resolve) => setTimeout(resolve, totalDurationMs));
   stop();
 
   assert.equal(received.length, samples.length);
   assert.deepEqual(
     received,
-    samples.map((s) => s.t)
+    samples.map((s) => s.tMs)
   );
 });
 
@@ -131,7 +131,7 @@ test("playSimulatedWalk: cancel function stops further onSample calls", async ()
 
   // Wait long enough that, if cancellation didn't work, the rest of the
   // walk would have played out.
-  const totalDurationMs = samples[samples.length - 1].t / 20 + 50;
+  const totalDurationMs = samples[samples.length - 1].tMs / 20 + 50;
   await new Promise((resolve) => setTimeout(resolve, totalDurationMs));
 
   assert.ok(countAtCancel < samples.length, "sanity check: cancel happened before completion");
