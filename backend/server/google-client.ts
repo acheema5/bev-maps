@@ -16,8 +16,9 @@ const ROUTES_COMPUTE_URL = "https://routes.googleapis.com/directions/v2:computeR
 const REQUEST_TIMEOUT_MS = 3000;
 
 // VISION.md decision #5: a bev is any place open now that sells drinks.
-// A place matches if any of its types is listed (not just its primary type).
-// Sit-down restaurants and bars stay out.
+// A place matches if any of its types is listed (not just its primary type),
+// so we don't search for restaurants or bars, but one that Google also lists
+// as a café, deli, or bakery counts.
 export const INCLUDED_PLACE_TYPES = [
   // Stores
   "convenience_store",
@@ -38,6 +39,21 @@ export const INCLUDED_PLACE_TYPES = [
   "bagel_shop",
   "donut_shop",
 ];
+
+// The types that keep long hours, for a second look when the nearest page of
+// results is all closed (cafés and bakeries at night).
+export const LONG_HOURS_PLACE_TYPES = [
+  "convenience_store",
+  "supermarket",
+  "grocery_store",
+  "liquor_store",
+  "drugstore",
+  "pharmacy",
+  "gas_station",
+];
+
+// searchNearby's page size, and the most it can return.
+export const MAX_RESULT_COUNT = 20;
 
 export function isValidLatLng(p: unknown): p is LatLng {
   const q = p as LatLng | null | undefined;
@@ -73,7 +89,8 @@ function assertApiOk(res: Response, label: string): void {
 export async function searchNearby(
   apiKey: string,
   origin: LatLng,
-  radiusM: number
+  radiusM: number,
+  includedTypes: string[] = INCLUDED_PLACE_TYPES
 ): Promise<PlaceCandidate[]> {
   const res = await fetch(PLACES_SEARCH_NEARBY_URL, {
     method: "POST",
@@ -85,8 +102,8 @@ export async function searchNearby(
         "places.id,places.displayName,places.location,places.types,places.currentOpeningHours.openNow,places.currentOpeningHours.nextCloseTime",
     },
     body: JSON.stringify({
-      includedTypes: INCLUDED_PLACE_TYPES,
-      maxResultCount: 20,
+      includedTypes,
+      maxResultCount: MAX_RESULT_COUNT,
       // Default is POPULARITY; we need the nearest stores in the top 20.
       rankPreference: "DISTANCE",
       locationRestriction: {

@@ -269,6 +269,68 @@ test("findBev: searches cafés and other drink sellers, not just convenience sto
   }
 });
 
+function closedCafes(count: number) {
+  return {
+    places: Array.from({ length: count }, (_, i) => ({
+      id: `cafe-${i}`,
+      types: ["cafe"],
+      displayName: { text: `Closed Cafe ${i}` },
+      location: { latitude: 37.775 + i * 0.0001, longitude: -122.4194 },
+      currentOpeningHours: { openNow: false },
+    })),
+  };
+}
+
+test("findBev: a full page of closed cafés falls back to long-hours stores", async () => {
+  const pharmacy = {
+    places: [
+      {
+        id: "pharmacy-24h",
+        types: ["pharmacy", "drugstore"],
+        displayName: { text: "24h Pharmacy" },
+        location: { latitude: 37.79, longitude: -122.4194 },
+        currentOpeningHours: { openNow: true },
+      },
+    ],
+  };
+  const searches: any[] = [];
+  const dispatch = routeUrlDispatch({
+    searchNearby: () => jsonResponse(searches.length === 1 ? closedCafes(20) : pharmacy),
+    computeRouteMatrix: () =>
+      jsonResponse([{ originIndex: 0, destinationIndex: 0, duration: "400s", distanceMeters: 500, condition: "ROUTE_EXISTS" }]),
+    computeRoutes: () =>
+      jsonResponse({ routes: [{ duration: "400s", distanceMeters: 500, polyline: { encodedPolyline: "_p~iF~ps|U_ulLnnqC" } }] }),
+  });
+  global.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (url.toString().includes("searchNearby")) searches.push(JSON.parse(String(init?.body)));
+    return dispatch(url);
+  }) as typeof fetch;
+
+  const result = await findBev({ origin: ORIGIN, accuracyM: 10 });
+
+  assert.equal(result.status, "FOUND");
+  if (result.status !== "FOUND") return;
+  assert.equal(result.destination.placeId, "pharmacy-24h");
+  assert.equal(searches.length, 2);
+  assert.ok(!searches[1].includedTypes.includes("cafe"));
+  assert.ok(searches[1].includedTypes.includes("pharmacy"));
+});
+
+test("findBev: a short page with nothing open doesn't search again", async () => {
+  let searchCalls = 0;
+  global.fetch = routeUrlDispatch({
+    searchNearby: () => {
+      searchCalls++;
+      return jsonResponse(closedCafes(7));
+    },
+  }) as typeof fetch;
+
+  const result = await findBev({ origin: ORIGIN, accuracyM: 10 });
+
+  assert.equal(result.status, "NONE_NEARBY");
+  assert.equal(searchCalls, 1);
+});
+
 test("findBev: a café is reported with kind cafe", async () => {
   global.fetch = routeUrlDispatch({
     searchNearby: () =>
