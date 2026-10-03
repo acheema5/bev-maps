@@ -8,6 +8,7 @@ export type Flags = {
   sim: boolean; // ?sim=1: simulated walk along the fixture route
   debug: boolean; // ?debug=1: debug panel, desktop allowed
   fixture: FixtureVariant | null; // ?fixture=…: force a canned /api response
+  live: boolean; // ?live=1: real /api calls in a development build
 };
 
 export type Device = {
@@ -27,6 +28,7 @@ export function readFlags(search: string): Flags {
     fixture: FIXTURE_VARIANTS.includes(fixture as FixtureVariant)
       ? (fixture as FixtureVariant)
       : null,
+    live: params.get("live") === "1",
   };
 }
 
