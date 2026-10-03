@@ -253,6 +253,49 @@ test("findBev: searches by distance with a timeout on every request", async () =
   assert.equal(search?.body.rankPreference, "DISTANCE");
 });
 
+test("findBev: searches cafés and other drink sellers, not just convenience stores", async () => {
+  // A café 101 m away lost to a Duane Reade 505 m away when the search only
+  // asked for convenience stores and supermarkets.
+  let searchBody: any;
+  global.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
+    searchBody = JSON.parse(String(init?.body));
+    return jsonResponse({ places: [] });
+  }) as typeof fetch;
+
+  await findBev({ origin: ORIGIN, accuracyM: 10 });
+
+  for (const type of ["convenience_store", "supermarket", "cafe", "coffee_shop", "pharmacy", "gas_station", "liquor_store"]) {
+    assert.ok(searchBody.includedTypes.includes(type), `missing ${type}`);
+  }
+});
+
+test("findBev: a café is reported with kind cafe", async () => {
+  global.fetch = routeUrlDispatch({
+    searchNearby: () =>
+      jsonResponse({
+        places: [
+          {
+            id: "cafe-1",
+            types: ["cafe"],
+            displayName: { text: "The Cafe" },
+            location: { latitude: 37.7758, longitude: -122.4194 },
+            currentOpeningHours: { openNow: true, nextCloseTime: "2099-01-01T00:00:00Z" },
+          },
+        ],
+      }),
+    computeRouteMatrix: () =>
+      jsonResponse([{ originIndex: 0, destinationIndex: 0, duration: "80s", distanceMeters: 101, condition: "ROUTE_EXISTS" }]),
+    computeRoutes: () =>
+      jsonResponse({ routes: [{ duration: "80s", distanceMeters: 101, polyline: { encodedPolyline: "_p~iF~ps|U_ulLnnqC" } }] }),
+  }) as typeof fetch;
+
+  const result = await findBev({ origin: ORIGIN, accuracyM: 10 });
+
+  assert.equal(result.status, "FOUND");
+  if (result.status !== "FOUND") return;
+  assert.equal(result.destination.kind, "cafe");
+});
+
 test("findBev: stores more than a 15-minute walk away are not returned", async () => {
   const places = loadFixture("places-searchNearby.json");
   const route = loadFixture("routes-computeRoutes.json");

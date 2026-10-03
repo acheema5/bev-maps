@@ -154,7 +154,7 @@ Refinements *(proposed)*:
 - **Walking range.** Search out to about a 15-minute walk (~1.2 km), widening in steps if nothing turns up. Past that: "No bev open nearby."
 - **Fast.** Start the search the moment a usable location arrives. Steps 2–5 should land within a couple of seconds.
 
-**What counts as a bev.** The conversation named convenience stores, supermarkets, and vending machines: places where you grab a drink and go. v1 treats a bev as any grab-and-go drink and searches those kinds of places. Whether pharmacies, gas stations, cafés, or liquor stores count is decision #5.
+**What counts as a bev** (decision #5). Any place open right now that sells drinks: convenience stores, supermarkets, grocery stores, pharmacies, gas stations, liquor stores, cafés, coffee, tea, and juice shops, delis, bakeries, bagel and donut shops. Sit-down restaurants and bars stay out. The conversation also named vending machines (see below).
 
 **Google can't see the shelves.** The conversation framed this as finding which bevs are in which stores, but Google Maps doesn't publish inventory. In v1, store type stands in for inventory: an open convenience store is assumed to have a bev.
 
@@ -303,7 +303,7 @@ Each has a working default so the build never waits. Confirm or change it, then 
 | 2 | What does "15 m" refer to? | Fog reveal radius · how much the minimap shows | Reveal radius. If the minimap showed only 15 m, everything on it would always be revealed and the fog would never appear. The minimap shows ~150 m across. | Open |
 | 3 | What does the unexplored map look like? | Black-and-white · Google dark mode | Google dark mode (both were mentioned) | **Decided 2026-10-03:** Google dark mode |
 | 4 | Show the destination before navigating? | Name + minutes · keep it a surprise | Name + minutes | Open |
-| 5 | What counts as a bev? | Grab-and-go stores · + pharmacies and gas stations · + cafés · + alcohol | Grab-and-go stores | Open |
+| 5 | What counts as a bev? | Grab-and-go stores · + pharmacies and gas stations · + cafés · + alcohol | Grab-and-go stores | **Decided 2026-10-03:** any place open now that sells drinks (stores, pharmacies, gas stations, liquor stores, cafés, coffee/tea/juice shops, delis, bakeries); not sit-down restaurants or bars |
 | 6 | Minimap orientation | Heading-up · north-up | Heading-up | **Decided 2026-10-03:** heading-up |
 | 7 | Route on the minimap? | Route + destination pin · fog only | Faint route + pin | **Decided 2026-10-03:** faint route + pin |
 | 8 | Arrival moment | Quiet glass card · something celebratory | "You found Bev" glass card | **Decided 2026-10-03:** quiet "You found Bev" card, Done → home |
@@ -407,6 +407,7 @@ Decisions from the founding conversation. Add new ones at the bottom.
 | 2026-10-03 | Development builds use fixtures for `/api/find-bev` unless `?live=1`; production is live. Protects the Places free tier |
 | 2026-10-03 | Finding Bev location: after 8 s settle for ≤100 m; at 15 s use the best fix within 200 m (findBev treats the fix as exact), else "Couldn't find you". "Precise Location off" only when every fix is worse than 1 km (cell-only fixes indoors can exceed 500 m) |
 | 2026-10-03 | /api/find-bev client timeout is 12 s, not 10 s: the server's worst case is ~9 s (3 Google calls × 3 s) plus a cold start |
+| 2026-10-03 | #5: a bev is any place open now that sells drinks, cafés included. Convenience stores and supermarkets alone sent a user at Cornell Tech to a Duane Reade 505 m away past an open café 101 m away. Sit-down restaurants and bars stay out |
 | 2026-10-03 | The guide is a translucent blue line with a band of light sweeping into a notched arrowhead (1.7 s, like the Finding Bev shimmer), replacing the white dashed line. Matt picked it from five blue, translucent options |
 
 ## References
