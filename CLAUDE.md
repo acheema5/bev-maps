@@ -34,6 +34,7 @@ If you can't tell which side a task belongs to, ask before editing anything.
 ```bash
 npm install                 # once, at the repo root
 npm run typecheck           # shared, backend-core, backend-server
+npm test                    # every workspace with a test script
 npm run build               # frontend (Next.js)
 npm run dev                 # frontend dev server
 ```

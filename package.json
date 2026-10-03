@@ -11,7 +11,8 @@
     "dev": "npm run dev --workspace frontend",
     "build": "npm run build --workspace frontend",
     "start": "npm run start --workspace frontend",
-    "typecheck": "tsc -p shared && tsc -p backend/core && tsc -p backend/server"
+    "typecheck": "tsc -p shared && tsc -p backend/core && tsc -p backend/server",
+    "test": "npm test --workspaces --if-present"
   },
   "devDependencies": {
     "typescript": "^5"
