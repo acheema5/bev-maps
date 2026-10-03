@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// One smoke test of the whole flow at iPhone size (`npm run test:e2e -w
-// frontend`, after `npm run build`). Chromium, not WebKit: only Chromium can
+// Smoke tests of the whole flow at iPhone size: `npm run build`, then
+// `npm run test:e2e -w frontend` (first time on a machine: `npx playwright
+// install chromium`). Every test uses ?sim or ?fixture, so no Places calls. Chromium, not WebKit: only Chromium can
 // fake a camera. The iPhone preset is WebKit, so take its size, touch, and
 // user agent and run them in Chromium.
 const { viewport, deviceScaleFactor, isMobile, hasTouch, userAgent } = devices["iPhone 15"];

@@ -68,7 +68,7 @@ export function Guide({ arrow, relativeAngleDeg, hidden }: Props) {
   const lean = leanFor(arrow, relativeAngleDeg);
 
   return (
-    <div className={styles.guide} data-hidden={hidden ? "" : undefined} aria-hidden>
+    <div className={styles.guide} data-hidden={hidden ? "" : undefined} data-testid="guide" aria-hidden>
       <div className={styles.plane}>
         <div className={styles.lean} style={{ transform: `rotate(${lean}deg)` }}>
           <svg className={styles.svg} viewBox="0 0 200 300">

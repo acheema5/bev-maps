@@ -7,7 +7,7 @@ test("Find Bev → navigate with guide and minimap → You found Bev → home", 
   page.on("pageerror", (e) => errors.push(e.message));
 
   await page.goto("/?sim=25");
-  await page.getByRole("button", { name: "Find Bev" }).click();
+  await page.getByRole("button", { name: "Find Bev", exact: true }).click();
 
   await expect(page.getByText("7-Eleven · 4 min")).toBeVisible();
   await page.getByRole("button", { name: "Enable camera" }).click();
@@ -15,12 +15,12 @@ test("Find Bev → navigate with guide and minimap → You found Bev → home", 
   // The camera view: live (fake) video, the guide, the minimap, the way out.
   await expect(page.getByRole("button", { name: "End navigation" })).toBeVisible();
   await expect(page.locator("video")).toBeVisible();
-  await expect(page.locator("svg path[pathLength]").first()).toBeAttached();
+  await expect(page.getByTestId("guide")).toBeAttached();
   await expect(page.locator("polyline")).toHaveAttribute("points", /\d/);
 
   await expect(page.getByText("You found Bev")).toBeVisible({ timeout: 60_000 });
   await page.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByRole("button", { name: "Find Bev" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Find Bev", exact: true })).toBeVisible();
 
   expect(errors).toEqual([]);
 });
@@ -31,7 +31,7 @@ test("no bev open nearby shows one calm line and Try again", async ({ page, cont
   await context.setGeolocation({ latitude: 40.7553, longitude: -73.9563, accuracy: 12 });
 
   await page.goto("/?fixture=none");
-  await page.getByRole("button", { name: "Find Bev" }).click();
+  await page.getByRole("button", { name: "Find Bev", exact: true }).click();
 
   await expect(page.getByText("No bev open nearby.")).toBeVisible();
   await page.getByRole("button", { name: "Try again" }).click();
@@ -51,6 +51,6 @@ test.describe("on a computer", () => {
   test("gets the phone-only line", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText("Bev Maps lives on your phone.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Find Bev" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Find Bev", exact: true })).toHaveCount(0);
   });
 });
