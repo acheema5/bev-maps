@@ -5,7 +5,8 @@
 export type FixtureVariant = "found" | "none" | "error" | "slow";
 
 export type Flags = {
-  sim: boolean; // ?sim=1: simulated walk along the fixture route
+  sim: boolean; // ?sim=1: simulated walk along the fixture route (?sim=5 walks 5× faster)
+  simSpeed: number;
   debug: boolean; // ?debug=1: debug panel, desktop allowed
   fixture: FixtureVariant | null; // ?fixture=…: force a canned /api response
   live: boolean; // ?live=1: real /api calls in a development build
@@ -22,8 +23,10 @@ const FIXTURE_VARIANTS: readonly FixtureVariant[] = ["found", "none", "error", "
 export function readFlags(search: string): Flags {
   const params = new URLSearchParams(search);
   const fixture = params.get("fixture");
+  const simSpeed = Number(params.get("sim") ?? 0) || 0;
   return {
-    sim: params.get("sim") === "1",
+    sim: simSpeed > 0,
+    simSpeed: Math.max(simSpeed, 1),
     debug: params.get("debug") === "1",
     fixture: FIXTURE_VARIANTS.includes(fixture as FixtureVariant)
       ? (fixture as FixtureVariant)

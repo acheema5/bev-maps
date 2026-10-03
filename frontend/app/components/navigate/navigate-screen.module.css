@@ -5,6 +5,14 @@
   color: var(--label-on-dark);
 }
 
+.camera {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* VISION → Leaving: a small glass × in the top-right ends navigation. */
 .exit {
   position: absolute;
