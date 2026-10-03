@@ -1,0 +1,29 @@
+.screen {
+  position: fixed;
+  inset: 0;
+  background: #0b0b0c;
+  color: var(--label-on-dark);
+}
+
+/* VISION → Leaving: a small glass × in the top-right ends navigation. */
+.exit {
+  position: absolute;
+  top: calc(var(--safe-top) + 12px);
+  right: calc(var(--safe-right) + 14px);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 300ms var(--ease-spring);
+}
+
+.exit:active {
+  transform: scale(0.92);
+}
+
+.exit svg {
+  width: 14px;
+  height: 14px;
+}

@@ -1,0 +1,57 @@
+.stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  animation: appear 700ms var(--ease-out) both;
+}
+
+/* The button sits dead center; the message floats above it so the button
+   never moves when a line appears. */
+.anchor {
+  position: relative;
+}
+
+.message {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 22px);
+  width: min(320px, calc(100vw - 48px));
+  transform: translateX(-50%);
+  text-align: center;
+  text-wrap: balance;
+  animation: rise 520ms var(--ease-out) both;
+}
+
+.quiet {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--label-secondary);
+}
+
+.line {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--label);
+}
+
+.hint {
+  margin-top: 6px;
+  font-size: 15px;
+  color: var(--label-secondary);
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
