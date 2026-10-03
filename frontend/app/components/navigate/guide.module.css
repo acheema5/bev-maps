@@ -1,6 +1,6 @@
-/* VISION → The guide: one large animated guide, a dashed line ending in an
-   arrowhead, white with a soft shadow, tilted onto the ground plane so it
-   looks painted on the street. */
+/* VISION → The guide: one large animated guide, a translucent blue line with
+   a band of light sweeping into the arrowhead, tilted onto the ground plane
+   so it looks painted on the street. */
 .guide {
   position: absolute;
   left: 50%;
@@ -39,42 +39,142 @@
   overflow: visible;
 }
 
-/* Three-ish dashes flowing toward the arrowhead (pathLength = 100). A dark
-   wider stroke underneath is the shadow: no live blur on moving content. */
-.dashes,
-.dashesShadow {
+/* Shimmer (picked 2026-10-03): one translucent blue line, a band of light
+   sweeping along it into the arrowhead on the Finding Bev shimmer's 1.7 s
+   loop. Translucency comes from group opacity, so each layer is opaque and
+   nothing doubles up where layers overlap. Shadows and the soft band are
+   stacked strokes: no live blur on moving content. */
+.lineShadow,
+.lineRim,
+.line,
+.band {
   fill: none;
   stroke-linecap: round;
-  stroke-dasharray: 17 13;
-  animation: flow 1.15s linear infinite;
 }
 
-.dashes {
+.lineShadow {
+  stroke: rgba(0, 28, 72, 0.2);
+  stroke-width: 19;
+}
+
+.glass {
+  opacity: 0.58;
+}
+
+.lineRim {
   stroke: #fff;
-  stroke-width: 13;
+  stroke-width: 15;
 }
 
-.dashesShadow {
-  stroke: rgba(0, 0, 0, 0.26);
-  stroke-width: 21;
+.line {
+  stroke: #0a84ff;
+  stroke-width: 11.5;
 }
 
-.head {
-  fill: #fff;
+/* One dash per loop (the 300 gap is longer than the path), starting just
+   before the path and ending just past it. Three nested widths soften it. */
+.band {
   stroke: #fff;
+  animation-duration: 1.7s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.bandWide {
+  stroke-opacity: 0.22;
+  stroke-width: 11.5;
+  stroke-dasharray: 30 300;
+  animation-name: sweepWide;
+}
+
+.bandMid {
+  stroke-opacity: 0.45;
+  stroke-width: 8;
+  stroke-dasharray: 16 300;
+  animation-name: sweepMid;
+}
+
+.bandCore {
+  stroke-opacity: 0.92;
+  stroke-width: 4;
+  stroke-dasharray: 6 300;
+  animation-name: sweepCore;
+}
+
+.headCut {
+  fill: #000;
+  stroke: #000;
   stroke-width: 7;
   stroke-linejoin: round;
 }
 
 .headShadow {
-  fill: rgba(0, 0, 0, 0.26);
-  stroke: rgba(0, 0, 0, 0.26);
-  stroke-width: 15;
+  fill: rgba(0, 28, 72, 0.2);
+  stroke: rgba(0, 28, 72, 0.2);
+  stroke-width: 2;
   stroke-linejoin: round;
 }
 
-@keyframes flow {
+.headGlass {
+  opacity: 0.76;
+}
+
+/* paint-order: the fill covers the inner half of the stroke, leaving a thin
+   white rim outside. */
+.head {
+  fill: #0a84ff;
+  stroke: #fff;
+  stroke-width: 3.4;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+.glint {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  opacity: 0.3;
+  animation: glint 1.7s linear infinite;
+}
+
+@keyframes sweepWide {
+  from {
+    stroke-dashoffset: 33;
+  }
   to {
-    stroke-dashoffset: -30;
+    stroke-dashoffset: -103;
+  }
+}
+
+@keyframes sweepMid {
+  from {
+    stroke-dashoffset: 26;
+  }
+  to {
+    stroke-dashoffset: -110;
+  }
+}
+
+@keyframes sweepCore {
+  from {
+    stroke-dashoffset: 21;
+  }
+  to {
+    stroke-dashoffset: -115;
+  }
+}
+
+/* The band's center reaches the arrowhead at ~87% of the loop. */
+@keyframes glint {
+  0%,
+  76% {
+    opacity: 0.3;
+  }
+  87% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.3;
   }
 }
