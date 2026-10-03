@@ -10,11 +10,14 @@ import { DesktopGate } from "./components/shell/desktop-gate";
 import { InstallHint } from "./components/shell/install-hint";
 import { RotateOverlay } from "./components/shell/rotate-overlay";
 import { appReducer, initialState, type AppState } from "./lib/app-state";
+import { debugKnobs } from "./lib/debug";
 import { detectDevice, readFlags, type Device, type Flags } from "./lib/env";
 import { findFlow } from "./lib/find-flow";
+import { useNavigation } from "./lib/navigation/use-navigation";
 import { openRearCamera, stopStream } from "./lib/sensors/camera";
 import { fixedLocation, realLocation } from "./lib/sensors/location";
 import { requestMotionPermission } from "./lib/sensors/permissions";
+import { realSensors, simSensors, type NavSensors } from "./lib/sensors/source";
 import { Session } from "./lib/session";
 import styles from "./page.module.css";
 
@@ -37,6 +40,8 @@ export default function BevMaps() {
   const [env, setEnv] = useState<Env | null>(null);
   const sessionRef = useRef<Session | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [sensors, setSensors] = useState<NavSensors | null>(null);
 
   useEffect(() => {
     // A one-time read of the browser environment after mount.
@@ -88,8 +93,10 @@ export default function BevMaps() {
       sessionRef.current?.end();
       sessionRef.current = null;
       // Ending the trip already stopped the tracks; drop the dead stream.
+      streamRef.current = null;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setStream(null);
+      setSensors(null);
     }
   }, [state.screen]);
 
@@ -98,7 +105,11 @@ export default function BevMaps() {
   const adoptStream = useCallback((session: Session, next: MediaStream | null) => {
     if (!next) return;
     session.own(() => stopStream(next));
-    if (!session.ended) setStream(next);
+    if (session.ended) return;
+    // A replacement stream retires the old one right away, not at trip end.
+    if (streamRef.current && streamRef.current !== next) stopStream(streamRef.current);
+    streamRef.current = next;
+    setStream(next);
   }, []);
 
   // Enable camera: one tap grants camera and compass together (VISION → 3.
@@ -107,7 +118,8 @@ export default function BevMaps() {
   // first, synchronously, before anything is awaited.
   const onEnableCamera = useCallback(() => {
     const session = sessionRef.current;
-    if (!env || !session || session.ended || session.starting) return;
+    if (!env || !session || session.ended || session.starting || state.screen !== "found") return;
+    const route = state.route;
     session.starting = true; // a second tap during the prompts does nothing
     const motion = env.flags.sim ? Promise.resolve("granted" as const) : requestMotionPermission();
     const camera = openRearCamera();
@@ -115,27 +127,50 @@ export default function BevMaps() {
     Promise.all([motion, camera]).then(([motionAnswer, cameraStream]) => {
       adoptStream(session, cameraStream);
       if (session.ended) return;
+      setSensors(
+        env.flags.sim ? simSensors(route, env.flags.simSpeed, () => debugKnobs.headingOffsetDeg) : realSensors(session),
+      );
       dispatch({
         type: "STARTED",
         camera: cameraStream ? "live" : "denied",
         compass: motionAnswer === "granted" ? "pending" : "denied",
       });
     });
-  }, [env, adoptStream]);
+  }, [env, state, adoptStream]);
 
   // iOS can end the camera while the app is in the background. Try to get it
   // back; if that fails, carry on over the dark background.
   const onCameraLost = useCallback(() => {
     const session = sessionRef.current;
-    if (!session || session.ended) return;
+    // The track's "ended" and the return to the foreground can both report
+    // the same loss; recover once.
+    if (!session || session.ended || session.recoveringCamera) return;
+    session.recoveringCamera = true;
     openRearCamera().then((next) => {
+      session.recoveringCamera = false;
       adoptStream(session, next);
       if (!session.ended) dispatch({ type: "CAMERA", camera: next ? "live" : "denied" });
-      if (!next) setStream(null);
+      if (!next) {
+        streamRef.current = null;
+        setStream(null);
+      }
     });
   }, [adoptStream]);
 
   const onExit = useCallback(() => dispatch({ type: "EXIT" }), []);
+
+  const getTripSignal = useCallback(() => sessionRef.current?.signal, []);
+  const trip = state.screen === "navigating" || state.screen === "arrived" ? state : null;
+  const { view } = useNavigation({
+    active: state.screen === "navigating",
+    sensors,
+    route: trip?.route ?? null,
+    destination: trip?.destination ?? null,
+    compass: state.screen === "navigating" ? state.compass : null,
+    flags: env?.flags ?? null,
+    tripSignal: getTripSignal,
+    dispatch,
+  });
 
   const homeScreen = isHomeScreen(state) ? state : null;
 
@@ -166,13 +201,14 @@ export default function BevMaps() {
         <NavigateScreen
           state={state as Extract<AppState, { screen: "navigating" | "arrived" }>}
           stream={stream}
+          view={view}
           onCameraLost={onCameraLost}
           onExit={onExit}
         />
       )}
       {state.screen === "home" && device.isIOS && !device.isStandalone && <InstallHint />}
       <RotateOverlay />
-      {flags.debug && <DebugPanel dispatch={dispatch} />}
+      {flags.debug && <DebugPanel dispatch={dispatch} sim={flags.sim} />}
     </div>
   );
 }

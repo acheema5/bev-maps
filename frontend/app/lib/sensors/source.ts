@@ -1,5 +1,6 @@
 import { playSimulatedWalk, simulatedWalk } from "backend-core";
 import type { WalkingRoute } from "shared/contract";
+import { report } from "../debug";
 import type { Session } from "../session";
 import { declinationAt, isTrustworthy, normalizeDeg, toTrueHeading, watchCompass } from "./heading";
 import type { Fix } from "./location";
@@ -25,12 +26,17 @@ export function realSensors(session: Session): NavSensors {
       const onFix = () => {
         const fix = session.latest;
         if (!fix) return;
-        declination ??= declinationAt(fix.position);
+        if (declination === null) {
+          declination = declinationAt(fix.position);
+          report("declination", declination);
+        }
         handlers.fix(fix);
       };
       onFix();
       const stopFixes = session.onChange(onFix);
       const stopCompass = watchCompass((sample) => {
+        report("magnetic", sample.magneticDeg, 0);
+        report("compass ±°", sample.accuracyDeg, 0);
         if (sample.pitchDeg !== null) handlers.pitch(sample.pitchDeg);
         if (isTrustworthy(sample) && declination !== null) {
           handlers.heading(toTrueHeading(sample.magneticDeg, declination), sample.timeMs);

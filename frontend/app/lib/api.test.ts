@@ -44,6 +44,11 @@ describe("requestBev: live", () => {
     await expect(requestBev({ origin, accuracyM: 10 }, { flags: live })).resolves.toMatchObject({ status: "ERROR" });
   });
 
+  it("treats a status the contract doesn't know as ERROR", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ status: "MAYBE" })));
+    await expect(requestBev({ origin, accuracyM: 10 }, { flags: live })).resolves.toMatchObject({ status: "ERROR" });
+  });
+
   it("times out into ERROR", async () => {
     vi.stubGlobal(
       "fetch",

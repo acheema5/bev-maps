@@ -27,7 +27,7 @@ export async function requestBev(request: FindBevRequest, options: CallOptions):
     if (variant === "error") return findBevError;
     return findBevFound;
   }
-  return post<FindBevResponse>("/api/find-bev", request, options.signal, options.timeoutMs ?? FIND_TIMEOUT_MS);
+  return post<FindBevResponse>("/api/find-bev", request, FIND_STATUSES, options.signal, options.timeoutMs ?? FIND_TIMEOUT_MS);
 }
 
 export async function requestRoute(request: RouteRequest, options: CallOptions): Promise<RouteResponse> {
@@ -35,12 +35,17 @@ export async function requestRoute(request: RouteRequest, options: CallOptions):
     await sleep(300, options.signal);
     return rerouteOk;
   }
-  return post<RouteResponse>("/api/route", request, options.signal, options.timeoutMs ?? ROUTE_TIMEOUT_MS);
+  return post<RouteResponse>("/api/route", request, ROUTE_STATUSES, options.signal, options.timeoutMs ?? ROUTE_TIMEOUT_MS);
 }
+
+// Only statuses the contract knows reach the app; anything else is an ERROR.
+const FIND_STATUSES: readonly FindBevResponse["status"][] = ["FOUND", "NONE_NEARBY", "ERROR"];
+const ROUTE_STATUSES: readonly RouteResponse["status"][] = ["OK", "ERROR"];
 
 async function post<T extends { status: string }>(
   url: string,
   body: unknown,
+  statuses: readonly T["status"][],
   signal: AbortSignal | undefined,
   timeoutMs: number,
 ): Promise<T | { status: "ERROR"; message: string }> {
@@ -58,9 +63,8 @@ async function post<T extends { status: string }>(
       signal: controller.signal,
     });
     const json: unknown = await response.json();
-    if (json && typeof json === "object" && typeof (json as { status?: unknown }).status === "string") {
-      return json as T;
-    }
+    const status = (json as { status?: unknown } | null)?.status;
+    if (statuses.includes(status as T["status"])) return json as T;
     return { status: "ERROR", message: `${url}: unexpected response (${response.status})` };
   } catch (err) {
     return { status: "ERROR", message: `${url}: ${err instanceof Error ? err.name : String(err)}` };

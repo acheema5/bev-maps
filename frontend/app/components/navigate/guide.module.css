@@ -1,0 +1,80 @@
+/* VISION → The guide: one large animated guide, a dashed line ending in an
+   arrowhead, white with a soft shadow, tilted onto the ground plane so it
+   looks painted on the street. */
+.guide {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 4vh);
+  width: min(80vw, 330px);
+  aspect-ratio: 2 / 3;
+  transform: translateX(-50%);
+  perspective: 720px;
+  perspective-origin: 50% 0%;
+  pointer-events: none;
+  transition: opacity 360ms var(--ease-out);
+}
+
+.guide[data-hidden] {
+  opacity: 0;
+}
+
+.plane {
+  width: 100%;
+  height: 100%;
+  transform: rotateX(50deg);
+  transform-origin: 50% 100%;
+}
+
+/* Within STRAIGHT the guide leans with the exact angle. */
+.lean {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 97%;
+  transition: transform 480ms var(--ease-out);
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Three-ish dashes flowing toward the arrowhead (pathLength = 100). A dark
+   wider stroke underneath is the shadow: no live blur on moving content. */
+.dashes,
+.dashesShadow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 17 13;
+  animation: flow 1.15s linear infinite;
+}
+
+.dashes {
+  stroke: #fff;
+  stroke-width: 13;
+}
+
+.dashesShadow {
+  stroke: rgba(0, 0, 0, 0.26);
+  stroke-width: 21;
+}
+
+.head {
+  fill: #fff;
+  stroke: #fff;
+  stroke-width: 7;
+  stroke-linejoin: round;
+}
+
+.headShadow {
+  fill: rgba(0, 0, 0, 0.26);
+  stroke: rgba(0, 0, 0, 0.26);
+  stroke-width: 15;
+  stroke-linejoin: round;
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -30;
+  }
+}

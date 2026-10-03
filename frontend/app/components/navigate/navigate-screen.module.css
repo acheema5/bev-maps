@@ -35,3 +35,31 @@
   width: 14px;
   height: 14px;
 }
+
+/* One calm line over the camera: "Hold your phone up", compass hints. */
+.pill {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 11px 18px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: fade 300ms var(--ease-out) both;
+}
+
+.holdUp {
+  top: 42%;
+}
+
+.compassHint {
+  bottom: calc(var(--safe-bottom) + 24px);
+  font-weight: 500;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}

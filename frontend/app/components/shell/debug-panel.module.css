@@ -30,3 +30,34 @@
   gap: 4px;
   margin-bottom: 6px;
 }
+
+.readout {
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  min-width: 190px;
+}
+
+.readout > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.readout dt {
+  opacity: 0.6;
+}
+
+.slider {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  touch-action: auto;
+}

@@ -17,6 +17,8 @@ export class Session {
   locationDenied = false;
   /** Enable camera was tapped; its permission prompts are in flight or done. */
   starting = false;
+  /** A lost camera is being reopened. */
+  recoveringCamera = false;
 
   constructor(location: LocationSource) {
     this.stopLocation = location.start(
