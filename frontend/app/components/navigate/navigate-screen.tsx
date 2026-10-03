@@ -24,7 +24,7 @@ type Props = {
 // without a compass the guide hides and the minimap takes over (Edge states).
 export function NavigateScreen({ state, stream, view, live, onCameraLost, onExit }: Props) {
   const arrived = state.screen === "arrived";
-  const compass = state.screen === "navigating" ? state.compass : "ok";
+  const compass = state.compass;
   const steering = compass === "ok" && view.guidance !== null;
   const holdUp = steering && !view.heldUp && !arrived;
 

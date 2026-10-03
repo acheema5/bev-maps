@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fogMask, prepareSpots } from "./fog-mask";
+import { MAX_SPOTS, fogMask, prepareSpots } from "./fog-mask";
 import { worldPx, zoomFor } from "./projection";
 
 const here = { lat: 40.7553, lng: -73.9563 };
@@ -14,10 +14,11 @@ describe("fog mask", () => {
 
   it("always reveals around you", () => {
     const mask = fogMask(prepareSpots([], here, zoom), worldPx(here, zoom), cam, 15);
-    expect(mask).toMatch(/^radial-gradient\(circle 15\.0px at 75\.0px 75\.0px/);
+    // Solid to 13.5 px, fading out by 16.5 px: the edge sits at the 15 px reveal radius.
+    expect(mask).toBe("radial-gradient(circle 16.5px at 75.0px 75.0px, #000 13.5px, transparent 16.5px)");
   });
 
-  it("merges points within the same 5 m cell", () => {
+  it("merges points within the same grid cell", () => {
     const spots = prepareSpots([metersNorth(0), metersNorth(1), metersNorth(2), metersNorth(30)], here, zoom);
     expect(spots.world.length).toBe(2);
   });
@@ -25,7 +26,7 @@ describe("fog mask", () => {
   it("caps the number of spots, keeping the nearest", () => {
     const far = Array.from({ length: 400 }, (_, i) => metersNorth(10 + i * 6));
     const spots = prepareSpots(far, here, zoom);
-    expect(spots.world.length).toBe(150);
+    expect(spots.world.length).toBe(MAX_SPOTS);
     // The nearest point (10 m north) survived the cap.
     const nearest = worldPx(metersNorth(10), zoom);
     expect(spots.world.some((w) => Math.abs(w.y - nearest.y) < 0.5)).toBe(true);

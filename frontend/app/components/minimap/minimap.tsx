@@ -1,11 +1,12 @@
 "use client";
 
 import { REVEAL_RADIUS_M, revealedPoints } from "backend-core";
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import type { Destination, LatLng, WalkingRoute } from "shared/contract";
 import type { NavLive } from "../../lib/navigation/use-navigation";
+import type { Fix } from "../../lib/sensors/location";
 import { fogMask, prepareSpots, type FogSpots } from "./fog-mask";
-import { getMinimapMaps, hasTiles, type MinimapMaps } from "./maps";
+import { getMinimapMaps, hasTiles, onMapsFailure, type MinimapMaps } from "./maps";
 import styles from "./minimap.module.css";
 import { metersPerPx, toScreen, worldPx, zoomFor, type Camera } from "./projection";
 
@@ -35,6 +36,12 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
   const pinRef = useRef<SVGGElement>(null);
   const accuracyRef = useRef<SVGCircleElement>(null);
   const triangleRef = useRef<SVGGElement>(null);
+  // Survives effect restarts: on arrival the navigation loop stops, but the
+  // minimap keeps showing where you ended up.
+  const lastFix = useRef<Fix | null>(null);
+  // Google tiles, unless the key is missing or Google refuses it.
+  const [tiles, setTiles] = useState(hasTiles);
+  useEffect(() => onMapsFailure(() => setTiles(false)), []);
 
   // A reroute swaps the route mid-walk; the loop reads the latest.
   const routeNow = useRef(route);
@@ -44,7 +51,8 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
 
   useEffect(() => {
     let maps: MinimapMaps | null = null;
-    let requested = false;
+    let requested = !tiles; // tile-less: never load Google
+    let dirty = true; // redraw on the next frame even if nothing moved
     let disposed = false;
     let raf = 0;
     let zoom: number | null = null;
@@ -58,7 +66,7 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
       maps = m;
       darkSlot.current?.appendChild(m.darkEl);
       lightSlot.current?.appendChild(m.lightEl);
-      last = { ...last, x: NaN }; // force a redraw with the maps in place
+      dirty = true; // the maps need a camera and the colored one a mask
     };
 
     const setMask = (el: HTMLElement | null, mask: string) => {
@@ -69,8 +77,9 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
 
     const frame = () => {
       raf = requestAnimationFrame(frame);
-      const fix = live.current?.fix;
-      if (!fix) return; // keep the last frame (e.g. on arrival)
+      const fix = live.current?.fix ?? lastFix.current;
+      if (!fix) return;
+      lastFix.current = fix;
 
       zoom ??= zoomFor(fix.position.lat, size, size);
       if (!requested) {
@@ -87,7 +96,8 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
 
       const moved = Math.abs(center.x - last.x) > 0.25 || Math.abs(center.y - last.y) > 0.25;
       const turned = Math.abs(((heading - last.heading + 540) % 360) - 180) > 0.5;
-      if (!moved && !turned && fix.accuracyM === last.accuracy && points === last.points && current === last.route) return;
+      if (!dirty && !moved && !turned && fix.accuracyM === last.accuracy && points === last.points && current === last.route) return;
+      dirty = false;
       last = { x: center.x, y: center.y, heading, accuracy: fix.accuracyM, points, route: current };
 
       if (maps) {
@@ -132,22 +142,22 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
       m?.darkEl.remove();
       m?.lightEl.remove();
     };
-  }, [live, headingUp, size, destination]);
+  }, [live, headingUp, size, destination, tiles]);
 
-  const visibleHeight = hasTiles ? size - LOGO_STRIP_PX : size;
+  const visibleHeight = tiles ? size - LOGO_STRIP_PX : size;
 
   return (
     <div className={styles.frame} aria-hidden>
       <div className={styles.map} style={{ width: size, height: size }}>
-        {hasTiles ? (
+        {tiles ? (
           <>
             <div ref={darkSlot} className={styles.layer} />
             <div className={styles.clip} style={{ height: visibleHeight }}>
-              <div ref={lightSlot} className={styles.layer} style={{ height: size }} />
+              <div ref={lightSlot} className={`${styles.layer} ${styles.fogged}`} style={{ height: size }} />
             </div>
           </>
         ) : (
-          <div ref={exploredRef} className={`${styles.layer} ${styles.explored}`} />
+          <div ref={exploredRef} className={`${styles.layer} ${styles.explored} ${styles.fogged}`} />
         )}
         <div className={styles.clip} style={{ height: visibleHeight }}>
           <svg className={styles.overlay} width={size} height={size} viewBox={`0 0 ${size} ${size}`}>

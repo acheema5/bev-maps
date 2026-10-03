@@ -10,7 +10,7 @@ import type { Flags } from "../env";
 import { createHeadingFilter, isHeldUp } from "../sensors/heading";
 import type { Fix } from "../sensors/location";
 import type { NavSensors } from "../sensors/source";
-import { COMPASS_STALE_MS, COMPASS_WAIT_MS, GUIDE_MIN_INTERVAL_MS } from "../tuning";
+import { COMPASS_RECOVER_MS, COMPASS_STALE_MS, COMPASS_WAIT_MS, GUIDE_MIN_INTERVAL_MS } from "../tuning";
 import { initialReroute, rerouteLanded, stepReroute } from "./reroute-policy";
 
 /** What the navigate screen renders. Changes at most ~10×/s. */
@@ -60,6 +60,8 @@ export function useNavigation(args: Args): { view: NavView; live: RefObject<NavL
     let lastGuideMs = -Infinity;
     let reroute = initialReroute;
     let compassLive = false; // trustworthy readings are arriving
+    let compassDropped = false; // went quiet after working: recover only once readings are steady
+    let recoveringSinceMs: number | null = null;
     let lastHeadingMs = 0;
     let arrived = false;
 
@@ -109,12 +111,21 @@ export function useNavigation(args: Args): { view: NavView; live: RefObject<NavL
         runGuide();
       },
       heading(trueDeg, timeMs) {
-        lastHeadingMs = performance.now();
+        const now = performance.now();
+        const gapMs = now - lastHeadingMs;
+        lastHeadingMs = now;
+        heading = filter.push(trueDeg, timeMs);
         if (!compassLive) {
+          if (compassDropped) {
+            // Interference can flicker readings on and off; don't flip the
+            // screen (and the minimap's size) with every blip.
+            if (recoveringSinceMs === null || gapMs > 500) recoveringSinceMs = now;
+            if (now - recoveringSinceMs < COMPASS_RECOVER_MS) return;
+          }
           compassLive = true;
+          recoveringSinceMs = null;
           dispatch({ type: "COMPASS", compass: "ok" });
         }
-        heading = filter.push(trueDeg, timeMs);
         live.current.headingDeg = heading;
         if (timeMs - lastGuideMs >= GUIDE_MIN_INTERVAL_MS) {
           lastGuideMs = timeMs;
@@ -142,6 +153,7 @@ export function useNavigation(args: Args): { view: NavView; live: RefObject<NavL
     const staleCheck = setInterval(() => {
       if (compassLive && performance.now() - lastHeadingMs > COMPASS_STALE_MS) {
         compassLive = false;
+        compassDropped = true;
         heading = null;
         live.current.headingDeg = null;
         dispatch({ type: "COMPASS", compass: "unavailable" });

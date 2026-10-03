@@ -13,7 +13,6 @@
   box-shadow:
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.3),
     0 6px 22px rgba(0, 0, 0, 0.32);
-  pointer-events: none;
   animation: appear 420ms var(--ease-out) both;
 }
 
@@ -40,6 +39,19 @@
   top: 0;
   width: 100%;
   overflow: hidden;
+}
+
+/* Fully fogged until the first frame draws its mask: the colored layer is
+   never shown unmasked, not even for a frame. */
+.fogged {
+  -webkit-mask-image: linear-gradient(transparent, transparent);
+  mask-image: linear-gradient(transparent, transparent);
+}
+
+/* Overlays never catch taps, so Google's Terms link stays tappable. */
+.overlay,
+.clip {
+  pointer-events: none;
 }
 
 /* Tile-less minimap (no Maps key yet): explored ground is lighter. */

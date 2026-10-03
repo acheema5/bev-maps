@@ -7,8 +7,8 @@ import { toScreen, worldPx, type Camera } from "./projection";
 // explored spot. Gradients are synchronous (no image decode), so the mask
 // never flashes, and stacking them unions the circles.
 
-const GRID_M = 5; // points closer than this add nothing visible
-const MAX_SPOTS = 150; // cap the layers WebKit repaints per frame
+export const GRID_M = 8; // 15 m circles this close still overlap seamlessly
+export const MAX_SPOTS = 250; // cap the candidates; only on-screen ones become layers
 
 export type FogSpots = {
   source: readonly LatLng[]; // the revealedPoints() array these came from
@@ -42,7 +42,8 @@ export function prepareSpots(points: readonly LatLng[], near: LatLng, zoom: numb
  * are skipped. Never returns "none" (that would mean fully visible).
  */
 export function fogMask(spots: FogSpots, you: { x: number; y: number } | null, cam: Camera, radiusPx: number): string {
-  const r = Math.max(2, radiusPx);
+  // A 3 px soft edge centered on the reveal radius, so 15 m reads as the edge.
+  const r = Math.max(2, radiusPx) + 1.5;
   const soft = Math.max(1, r - 3);
   const layers: string[] = [];
   const add = (w: { x: number; y: number }) => {

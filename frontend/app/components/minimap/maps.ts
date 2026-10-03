@@ -27,10 +27,26 @@ export type MinimapMaps = {
 
 let configured = false;
 let created: Promise<MinimapMaps | null> | null = null;
+let failed = false;
+const failureListeners = new Set<() => void>();
+
+function fail() {
+  failed = true;
+  for (const listener of failureListeners) listener();
+}
+
+/** Called if Google rejects the key (wrong referrer, billing, disabled API) or the script won't load. */
+export function onMapsFailure(listener: () => void): () => void {
+  if (failed) listener();
+  failureListeners.add(listener);
+  return () => failureListeners.delete(listener);
+}
 
 function configure() {
   if (configured || !hasTiles) return;
   configured = true;
+  // Google calls this global when the key is refused; its map then shows an error panel.
+  (window as Window & { gm_authFailure?: () => void }).gm_authFailure = fail;
   setOptions({ key: KEY, v: "weekly", mapIds: [MAP_ID!] });
 }
 
@@ -74,8 +90,12 @@ export function getMinimapMaps(center: LatLng, zoom: number): Promise<MinimapMap
       light: light.map,
       darkEl: dark.el,
       lightEl: light.el,
-      canRotate: () => dark.map.getRenderingType() === RenderingType.VECTOR,
+      // UNINITIALIZED counts as rotating, so the map doesn't flash north-up while it starts.
+      canRotate: () => dark.map.getRenderingType() !== RenderingType.RASTER,
     };
-  })().catch(() => null);
+  })().catch(() => {
+    fail();
+    return null;
+  });
   return created;
 }
