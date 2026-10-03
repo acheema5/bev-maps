@@ -405,6 +405,8 @@ Decisions from the founding conversation. Add new ones at the bottom.
 | 2026-10-03 | The guide's dashes flow with an SVG dash-offset animation (a paint, not a transform); fine for one path; to be verified at 60 fps on a real iPhone |
 | 2026-10-03 | No screen wake lock in v1 |
 | 2026-10-03 | Development builds use fixtures for `/api/find-bev` unless `?live=1`; production is live. Protects the Places free tier |
+| 2026-10-03 | Finding Bev location: after 8 s settle for ≤100 m; at 15 s use the best fix within 200 m (findBev treats the fix as exact), else "Couldn't find you". "Precise Location off" only when every fix is worse than 1 km (cell-only fixes indoors can exceed 500 m) |
+| 2026-10-03 | /api/find-bev client timeout is 12 s, not 10 s: the server's worst case is ~9 s (3 Google calls × 3 s) plus a cold start |
 
 ## References
 
