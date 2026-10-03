@@ -154,7 +154,7 @@ export function playSimulatedWalk(
   const scheduleNext = (index: number) => {
     if (cancelled || index >= samples.length) return;
 
-    const delayMs = index === 0 ? 0 : (samples[index].t - samples[index - 1].t) / speedMultiplier;
+    const delayMs = index === 0 ? 0 : (samples[index].tMs - samples[index - 1].tMs) / speedMultiplier;
 
     timeoutId = setTimeout(() => {
       if (cancelled) return;
