@@ -33,7 +33,16 @@ export type Destination = {
 export type WalkingRoute = {
   path: LatLng[]; // user -> store
   distanceM: number;
-  durationS: number;
+  durationS: number; // door to door, including any connector's wait and ride
+  // Set when the route rides a connector the walking router can't see, e.g.
+  // the Roosevelt Island Tram (VISION decision log, 2026-10-03). Its stretch
+  // of `path` is a straight line between the stations. Plain walks omit it.
+  via?: RouteConnector;
+};
+
+export type RouteConnector = {
+  name: string; // "Roosevelt Island Tram"
+  fareUsd?: number; // 3
 };
 
 export type ArrowState = "STRAIGHT" | "LEFT" | "RIGHT" | "U_TURN";
