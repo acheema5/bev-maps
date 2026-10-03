@@ -6,7 +6,7 @@ import type { Destination, LatLng, WalkingRoute } from "shared/contract";
 import type { NavLive } from "../../lib/navigation/use-navigation";
 import type { Fix } from "../../lib/sensors/location";
 import { fogMask, prepareSpots, type FogSpots } from "./fog-mask";
-import { getMinimapMaps, hasTiles, onMapsFailure, type MinimapMaps } from "./maps";
+import { getMinimapMaps, hasTiles, mapsFailed, onMapsFailure, type MinimapMaps } from "./maps";
 import styles from "./minimap.module.css";
 import { metersPerPx, toScreen, worldPx, zoomFor, type Camera } from "./projection";
 
@@ -39,8 +39,9 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
   // Survives effect restarts: on arrival the navigation loop stops, but the
   // minimap keeps showing where you ended up.
   const lastFix = useRef<Fix | null>(null);
+  const lastHeading = useRef<number | null>(null);
   // Google tiles, unless the key is missing or Google refuses it.
-  const [tiles, setTiles] = useState(hasTiles);
+  const [tiles, setTiles] = useState(() => hasTiles && !mapsFailed());
   useEffect(() => onMapsFailure(() => setTiles(false)), []);
 
   // A reroute swaps the route mid-walk; the loop reads the latest.
@@ -87,7 +88,10 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
         getMinimapMaps(fix.position, zoom).then((m) => m && attach(m));
       }
 
-      const compass = live.current?.headingDeg ?? null;
+      // When the loop stops (arrival) both go null: hold the last view still.
+      const liveNow = live.current?.fix != null;
+      const compass = liveNow ? (live.current?.headingDeg ?? null) : lastHeading.current;
+      lastHeading.current = compass;
       const rotates = headingUp && compass !== null && (!maps || maps.canRotate());
       const heading = rotates ? compass : 0;
       const center = worldPx(fix.position, zoom);

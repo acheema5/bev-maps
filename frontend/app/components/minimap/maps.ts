@@ -35,6 +35,10 @@ function fail() {
   for (const listener of failureListeners) listener();
 }
 
+export function mapsFailed(): boolean {
+  return failed;
+}
+
 /** Called if Google rejects the key (wrong referrer, billing, disabled API) or the script won't load. */
 export function onMapsFailure(listener: () => void): () => void {
   if (failed) listener();
@@ -52,7 +56,7 @@ function configure() {
 
 /** Start downloading the Maps JavaScript API early (on the Found screen). */
 export function prefetchMaps(): void {
-  if (!hasTiles) return;
+  if (!hasTiles || failed) return;
   configure();
   importLibrary("maps").catch(() => {});
 }
