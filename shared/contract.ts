@@ -49,8 +49,8 @@ export type Guidance = {
 // played back through the same code path as real sensors. See VISION.md >
 // "Technical shape" > Testing, and backend/core/sim.ts.
 export type SimSample = {
-  t: number; // milliseconds since the simulated walk started
+  tMs: number; // milliseconds since the simulated walk started
   position: LatLng;
   accuracyM: number;
-  headingDeg: number; // 0 = north, clockwise
+  headingDeg: number; // where the back camera faces; 0 = north, clockwise
 };
