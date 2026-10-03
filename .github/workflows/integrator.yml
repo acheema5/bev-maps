@@ -1,0 +1,88 @@
+name: Integrator agent
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+concurrency:
+  group: integrator-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Automatic review of every PR against the contract, VISION.md, and other open PRs.
+  review:
+    if: >
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            AUTHOR: ${{ github.event.pull_request.user.login }}
+
+            Act as the integrator agent defined in .claude/agents/integrator.md:
+            read that file and follow its checks and output format for this PR.
+
+            Then:
+            1. Write your review to /tmp/review.md and post it as a single PR comment,
+               updating your previous one if it exists:
+               gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file /tmp/review.md
+            2. If shared/ changed, add the label:
+               gh label create contract-change --color D93F0B --description "Changes shared/contract.ts" --force
+               gh pr edit ${{ github.event.pull_request.number }} --add-label contract-change
+            3. If the PR needs the other owner's attention, @-mention them in the comment
+               (frontend: @mbwiller, backend: @acheema5).
+          claude_args: >-
+            --model claude-sonnet-5-5
+            --max-turns 40
+            --allowedTools "Read,Glob,Grep,Write,Bash(gh pr:*),Bash(gh label:*),Bash(git diff:*),Bash(git log:*),Bash(git fetch:*),Bash(npm ci),Bash(npm run:*),Bash(npm test)"
+
+  # Interactive: comment "@claude ..." on a PR to ask questions or have it push fixes.
+  mention:
+    if: >
+      (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
+      contains(github.event.comment.body, '@claude') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --max-turns 60
+            --append-system-prompt "You are the Bev Maps integrator. Follow CLAUDE.md and .claude/agents/integrator.md. When pushing fixes, only touch the folder of the PR's author unless asked otherwise."

@@ -1,0 +1,7 @@
+# Owners are auto-requested as reviewers on PRs touching their paths.
+/frontend/   @mbwiller
+/backend/    @acheema5
+/shared/     @mbwiller @acheema5
+/.github/    @mbwiller @acheema5
+/CLAUDE.md   @mbwiller @acheema5
+/VISION.md   @mbwiller @acheema5

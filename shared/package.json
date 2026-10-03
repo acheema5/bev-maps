@@ -1,0 +1,13 @@
+{
+  "name": "@bev-maps/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./contract": "./contract.ts",
+    "./fixtures": "./fixtures.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  }
+}
