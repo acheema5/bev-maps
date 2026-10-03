@@ -40,7 +40,7 @@ These settle tradeoffs. When two options both work, pick the one that fits these
 | 2 | Finding | **Finding Bev**, shimmering | Get your location → find open stores nearby → pick the closest → get a walking route |
 | 3 | Found | **Enable camera** | Waiting for the tap that turns on the camera |
 | 4 | Navigate | Live camera, a big animated arrow, a minimap top-left | Guidance updates continuously as you walk and turn |
-| 5 | Arrived *(proposed)* | **You found Bev** | Navigation ends; one tap returns home (decision #8) |
+| 5 | Arrived | **You found Bev** glass card | Navigation ends; Done returns home (decision #8) |
 
 *(proposed)* The whole flow is a single screen that changes state, with no page loads or URL changes between steps. It feels more like an app, and Home Screen web apps have historically dropped camera access when the page navigates.
 
@@ -50,12 +50,15 @@ These settle tradeoffs. When two options both work, pick the one that fits these
 - **Look:** Apple glassmorphism, the frosted, translucent glass of current iOS (Liquid Glass). White, with a little gray toward the corners, so it reads as a physical piece of glass rather than a flat shape.
 - **Feel:** seamlessly integrated, as if Apple shipped it. Not even slightly like an AI-generated button.
 - **Type:** clean and Apple-like. Use SF Pro, the iPhone's system font, through the system font stack, so there's nothing to download. References for the overall feel: Apple's own apps, Granola, Wispr Flow.
-- Glass needs something behind it to blur. What that is stays open (decision #9).
+- **Behind the glass** (decision #9): an off-white field with two or three very soft, slowly drifting white and gray light shapes. No color.
+- **Always light**, whatever the phone's appearance setting.
+- **One morphing button:** Find Bev → Finding Bev → Enable camera is the same piece of glass changing its label. The "7-Eleven · 4 min" line fades in above it.
+- **Status bar:** `black-translucent`, so the camera can run full-bleed under it later (iOS reads this once at launch, so it can't switch per screen). Its clock and battery are white, so Home draws a very faint gray fade behind the status bar to keep them readable on the off-white background.
 
 ### 2. Finding Bev
 
 - On tap, **Find Bev** becomes **Finding Bev** and stays that way until the backend returns a store.
-- **The shimmer:** a band of light streams through the letters on a loop, like the old iPhone "slide to unlock" text. As described in the conversation: white letters with gray moving through them (contrast on white glass is decision #10). The shimmer *is* the loading indicator; there's no spinner.
+- **The shimmer:** a band of light streams through the letters on a loop, like the old iPhone "slide to unlock" text. The letters are secondary gray with a brighter band sweeping through them (decision #10). The conversation described white letters with gray moving through, but literal white-on-white doesn't read on white glass. The shimmer *is* the loading indicator; there's no spinner.
 - Dots appearing one at a time came up too. They're optional; the shimmer is the agreed core.
 - *(proposed)* Hold the shimmer for at least ~0.8 s, even when the answer is instant, so it never flickers. If nothing comes back within ~10 s, show a calm error with Try again.
 - *(proposed)* This state includes getting a GPS fix, which can take a few seconds. Ask for high accuracy, and start searching as soon as the fix is good enough (within ~50 m) rather than waiting for a perfect one.
@@ -106,13 +109,13 @@ A small map in the **upper-left corner**, like the minimap in Call of Duty. The 
 
 **You.** A circle marks your position, sized to how sure the phone is about where you are: the accuracy circle Apple Maps draws. Wide when the fix is rough, tight when it's precise. A small triangle on the circle points the way your phone is facing. *Facing* means straight out of the back of the phone held upright in its normal vertical position, the direction the camera looks.
 
-**Fog of war.** The minimap starts in dark mode (or black-and-white, decision #3). As you walk, the area around you lights up into the normal full-color Google Map (green parks, tan city blocks, blue water) and stays lit. Anywhere you haven't been stays dark. Picture the dark map on top, the regular colored map underneath, and your path cutting windows through the dark layer.
+**Fog of war.** The minimap starts in Google's dark mode (decision #3). As you walk, the area around you lights up into the normal full-color Google Map (green parks, tan city blocks, blue water) and stays lit. Anywhere you haven't been stays dark. Picture the dark map on top, the regular colored map underneath, and your path cutting windows through the dark layer.
 
 - **Reveal radius: 15 m** around you (working interpretation, decision #2).
 - **You explore it with your feet.** To see more of the map, you go there. *(proposed: no panning or pinch-zoom; the minimap always follows you.)*
 - *(proposed)* **It remembers.** Discovered areas stay discovered across sessions, saved on the phone.
-- *(proposed)* **Heading-up.** The map turns so the direction you're facing is always up, matching the camera view. The triangle then always points to the top, the way game minimaps work (decision #6).
-- *(proposed)* A faint route line and the destination pin, when they're in view (decision #7).
+- **Heading-up.** The map turns so the direction you're facing is always up, matching the camera view. The triangle then always points to the top, the way game minimaps work (decision #6).
+- A faint route line and the destination pin, when they're in view (decision #7).
 
 ### Edge states *(proposed)*
 
@@ -123,8 +126,12 @@ Each is one calm line in the same glass style, never a wall of text.
 | Location permission denied | "Bev Maps needs your location to find a bev." + how to turn it on |
 | Nothing open within walking range | "No bev open nearby." + Try again |
 | Camera denied | Navigation continues: the guide over a dark background, minimap as usual |
-| Compass or motion denied | Ask once more; otherwise enlarge the minimap and show the route line |
+| Compass or motion denied | iPhone remembers a denial until the app is relaunched, so the "ask once more" is the line "Reopen Bev Maps to allow compass". Meanwhile: enlarge the minimap and show the route line |
+| Compass gives no usable reading | Same as denied, without the reopen hint |
 | Weak GPS | Stay on Finding Bev a little longer while accuracy improves |
+| Precise Location off | Fixes stay city-sized and never improve: one line on where to turn Precise Location on |
+| No usable GPS fix in time | "Couldn't find you. Step outside and try again." + Try again |
+| Phone turned sideways | "Turn your phone upright" (iPhone can't lock a web app to portrait) |
 | Phone held flat | "Hold your phone up" |
 | Network error | "Couldn't reach Bev." + Try again |
 | Opened in a Safari tab, not installed | A small hint: Share → Add to Home Screen |
@@ -288,20 +295,20 @@ Checks *(proposed)*:
 
 ## Open decisions
 
-Each has a working default so the build never waits. Confirm or change it, then log it below.
+Each has a working default so the build never waits. Confirm or change it, then log it below and mark it decided here.
 
-| # | Question | Options | Working default |
-|---|---|---|---|
-| 1 | How does the arrow move? | Every angle · four fixed states | Compute every angle, display four states |
-| 2 | What does "15 m" refer to? | Fog reveal radius · how much the minimap shows | Reveal radius. If the minimap showed only 15 m, everything on it would always be revealed and the fog would never appear. The minimap shows ~150 m across. |
-| 3 | What does the unexplored map look like? | Black-and-white · Google dark mode | Google dark mode (both were mentioned) |
-| 4 | Show the destination before navigating? | Name + minutes · keep it a surprise | Name + minutes |
-| 5 | What counts as a bev? | Grab-and-go stores · + pharmacies and gas stations · + cafés · + alcohol | Grab-and-go stores |
-| 6 | Minimap orientation | Heading-up · north-up | Heading-up |
-| 7 | Route on the minimap? | Route + destination pin · fog only | Faint route + pin |
-| 8 | Arrival moment | Quiet glass card · something celebratory | "You found Bev" glass card |
-| 9 | What sits behind the Find Bev glass? | Soft neutral · blurred local map · texture | Soft neutral. A local map would need location before the first tap. |
-| 10 | Shimmer contrast | White text, gray band · gray text, white band | Whichever reads on white glass; literal white-on-white won't |
+| # | Question | Options | Working default | Status |
+|---|---|---|---|---|
+| 1 | How does the arrow move? | Every angle · four fixed states | Compute every angle, display four states | Open |
+| 2 | What does "15 m" refer to? | Fog reveal radius · how much the minimap shows | Reveal radius. If the minimap showed only 15 m, everything on it would always be revealed and the fog would never appear. The minimap shows ~150 m across. | Open |
+| 3 | What does the unexplored map look like? | Black-and-white · Google dark mode | Google dark mode (both were mentioned) | **Decided 2026-10-03:** Google dark mode |
+| 4 | Show the destination before navigating? | Name + minutes · keep it a surprise | Name + minutes | Open |
+| 5 | What counts as a bev? | Grab-and-go stores · + pharmacies and gas stations · + cafés · + alcohol | Grab-and-go stores | Open |
+| 6 | Minimap orientation | Heading-up · north-up | Heading-up | **Decided 2026-10-03:** heading-up |
+| 7 | Route on the minimap? | Route + destination pin · fog only | Faint route + pin | **Decided 2026-10-03:** faint route + pin |
+| 8 | Arrival moment | Quiet glass card · something celebratory | "You found Bev" glass card | **Decided 2026-10-03:** quiet "You found Bev" card, Done → home |
+| 9 | What sits behind the Find Bev glass? | Soft neutral · blurred local map · texture | Soft neutral. A local map would need location before the first tap. | **Decided 2026-10-03:** off-white with soft drifting white/gray light shapes |
+| 10 | Shimmer contrast | White text, gray band · gray text, white band | Whichever reads on white glass; literal white-on-white won't | **Decided 2026-10-03:** gray text, brighter band |
 
 ## How we build it
 
@@ -326,14 +333,14 @@ One Vercel project. `frontend/` is the deployed app; its `/api/*` routes are thi
 - Find Bev, the Finding Bev shimmer, the Found screen, arrival, and edge states
 - Full-screen rear camera and the animated four-state guide
 - Minimap rendering: dark and color layers, fog mask, accuracy circle, heading triangle
-- Sensors and permissions: reads raw GPS, compass, and camera, and hands values to `backend/core/`
+- Sensors and permissions: reads raw GPS, compass, and camera; smooths the compass and converts magnetic to true north; hands values to `backend/core/`. Owns the reroute timing (`offRoute` held ~5 s, at most every ~15 s)
 - Home Screen shell: manifest, icon, standalone mode, safe areas, install hint
 
 **Backend: everything that finds, routes, and computes** · owner: Arjun (@acheema5)
 
 - `/api/find-bev` and `/api/route`: candidate search, open-now and open-on-arrival filters, walking-time ranking, routing
 - Google Maps Platform keys, field masks, budget alert
-- Guidance: route snapping, look-ahead target, arrow state, off-route, arrival, heading smoothing
+- Guidance: route snapping, look-ahead target, arrow state, off-route, arrival
 - Fog of war data: what's revealed, saved on the phone
 - Fixtures and a **simulated walk** (fake GPS and heading moving along a recorded route, e.g. `?sim=1`) so the frontend can be built and demoed at a desk
 
@@ -386,6 +393,20 @@ Decisions from the founding conversation. Add new ones at the bottom.
 | 2026-10-02 | Photo capture deferred to v2 |
 | 2026-10-02 | User-added locations, points, and profiles deferred |
 | 2026-10-02 | Build process: VISION.md → two subfolders, one per person → agents in parallel → an integration agent combining work continuously |
+| 2026-10-03 | #3: the unexplored minimap is Google dark mode; #6 heading-up and #7 faint route + pin confirmed |
+| 2026-10-03 | #8: arrival is the quiet "You found Bev" glass card, Done → home |
+| 2026-10-03 | #9: behind the Find Bev glass, an off-white field with two or three very soft, slowly drifting white and gray light shapes. No color |
+| 2026-10-03 | #10: "Finding Bev" is secondary-gray text with a brighter band sweeping through it |
+| 2026-10-03 | Find Bev → Finding Bev → Enable camera is one glass button that morphs; the "7-Eleven · 4 min" line fades in above it |
+| 2026-10-03 | Home is always light, whatever the phone's appearance setting. Status bar is black-translucent so the camera runs full-bleed; Home adds a very faint gray fade behind it so the white clock and battery stay readable |
+| 2026-10-03 | Minimap: rounded square, ~150 pt, ~150 m across, no labels or POIs. Google's logo and attribution stay fully visible (Maps Platform terms), so it isn't a circle |
+| 2026-10-03 | Heading smoothing and magnetic → true north correction move to the frontend (they're sensor input); `guide()` receives a smoothed true-north heading. The frontend owns reroute timing |
+| 2026-10-03 | New edge states: compass unusable, Precise Location off, no GPS fix, phone sideways. Motion "ask once more" is a reopen hint (iPhone can't re-prompt in the same session) |
+| 2026-10-03 | The guide's dashes flow with an SVG dash-offset animation (a paint, not a transform); fine for one path; to be verified at 60 fps on a real iPhone |
+| 2026-10-03 | No screen wake lock in v1 |
+| 2026-10-03 | Development builds use fixtures for `/api/find-bev` unless `?live=1`; production is live. Protects the Places free tier |
+| 2026-10-03 | Finding Bev location: after 8 s settle for ≤100 m; at 15 s use the best fix within 200 m (findBev treats the fix as exact), else "Couldn't find you". "Precise Location off" only when every fix is worse than 1 km (cell-only fixes indoors can exceed 500 m) |
+| 2026-10-03 | /api/find-bev client timeout is 12 s, not 10 s: the server's worst case is ~9 s (3 Google calls × 3 s) plus a cold start |
 
 ## References
 

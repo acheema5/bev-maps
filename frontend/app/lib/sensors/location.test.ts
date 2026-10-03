@@ -31,10 +31,10 @@ describe("decideFix", () => {
     expect(decideFix([at(3_000), at(400)], 8_000)).toEqual({ kind: "wait" });
   });
 
-  it("at 15 s uses the best fix within 500 m rather than failing", () => {
-    const rough = at(400);
+  it("at 15 s uses the best fix within 200 m rather than failing", () => {
+    const rough = at(180);
     expect(decideFix([at(900), rough], 15_000)).toEqual({ kind: "use", fix: rough });
-    expect(decideFix([at(900)], 15_000)).toEqual({ kind: "fail", notice: "no-fix" });
+    expect(decideFix([at(400)], 15_000)).toEqual({ kind: "fail", notice: "no-fix" });
   });
 
   it("picks the most accurate fix, newest on ties", () => {
