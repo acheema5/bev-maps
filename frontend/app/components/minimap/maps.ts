@@ -61,14 +61,30 @@ export function prefetchMaps(): void {
   importLibrary("maps").catch(() => {});
 }
 
-export function getMinimapMaps(center: LatLng, zoom: number): Promise<MinimapMaps | null> {
+/**
+ * The two maps, created on first use INSIDE the given on-screen, sized hosts:
+ * Google's vector (rotatable) renderer fails on a detached, zero-size element
+ * and silently falls back to raster, which can't turn heading-up.
+ */
+export function getMinimapMaps(
+  center: LatLng,
+  zoom: number,
+  hosts: { dark: HTMLElement; light: HTMLElement },
+): Promise<MinimapMaps | null> {
   if (!hasTiles) return Promise.resolve(null);
   configure();
   created ??= (async () => {
     const [{ Map, RenderingType }, { ColorScheme }] = await Promise.all([importLibrary("maps"), importLibrary("core")]);
-    const make = (colorScheme: google.maps.ColorScheme) => {
+    // The minimap that asked may have closed while the library loaded. Creating
+    // the maps off-screen would make them raster for good: try again next time.
+    if (!hosts.dark.isConnected || !hosts.light.isConnected) {
+      created = null;
+      return null;
+    }
+    const make = (colorScheme: google.maps.ColorScheme, host: HTMLElement) => {
       const el = document.createElement("div");
       el.style.cssText = "position:absolute;inset:0;";
+      host.appendChild(el);
       const map = new Map(el, {
         mapId: MAP_ID,
         renderingType: RenderingType.VECTOR,
@@ -87,8 +103,8 @@ export function getMinimapMaps(center: LatLng, zoom: number): Promise<MinimapMap
       });
       return { el, map };
     };
-    const dark = make(ColorScheme.DARK);
-    const light = make(ColorScheme.LIGHT);
+    const dark = make(ColorScheme.DARK, hosts.dark);
+    const light = make(ColorScheme.LIGHT, hosts.light);
     return {
       dark: dark.map,
       light: light.map,
