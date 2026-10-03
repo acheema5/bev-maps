@@ -1,2 +1,1 @@
-@AGENTS.md
 @INSTRUCTIONS.md
