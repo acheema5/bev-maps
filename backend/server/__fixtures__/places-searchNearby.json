@@ -1,0 +1,25 @@
+{
+  "places": [
+    {
+      "id": "place-1",
+      "types": ["convenience_store", "point_of_interest", "store", "establishment"],
+      "displayName": { "text": "Corner Store", "languageCode": "en" },
+      "location": { "latitude": 37.7759, "longitude": -122.4194 },
+      "currentOpeningHours": { "openNow": true, "nextCloseTime": "2099-01-01T00:00:00Z" }
+    },
+    {
+      "id": "place-2",
+      "types": ["supermarket", "grocery_store", "store", "establishment"],
+      "displayName": { "text": "Big Mart", "languageCode": "en" },
+      "location": { "latitude": 37.7790, "longitude": -122.4194 },
+      "currentOpeningHours": { "openNow": true, "nextCloseTime": "2099-01-01T00:00:00Z" }
+    },
+    {
+      "id": "place-3",
+      "types": ["convenience_store", "point_of_interest", "store", "establishment"],
+      "displayName": { "text": "Late Night Mini", "languageCode": "en" },
+      "location": { "latitude": 37.7820, "longitude": -122.4194 },
+      "currentOpeningHours": { "openNow": true, "nextCloseTime": "2099-01-01T00:00:00Z" }
+    }
+  ]
+}
