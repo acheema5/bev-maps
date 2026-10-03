@@ -75,7 +75,7 @@ This screen is Bev Maps.
 
 **The view.** The live rear camera fills the screen: what you'd see opening the Camera app to take a photo, minus the shutter button and every other control. You hold the phone upright in front of you, the way people play Pokémon Go.
 
-**The guide.** Centered over the camera image is one large animated guide: a dashed line ending in an arrowhead. Two to four dashes were discussed; three is the lean. The dashes flow toward the arrowhead, so the guide always pulls you forward.
+**The guide.** Centered over the camera image is one large animated guide: a translucent blue line ending in a notched arrowhead, with a band of light sweeping along it into the arrowhead on the Finding Bev shimmer's rhythm, so the guide always pulls you forward (decided 2026-10-03; it replaces the founding conversation's dashed line, which had two to four dashes flowing toward the arrowhead).
 
 The guide has four states:
 
@@ -97,7 +97,7 @@ The guide has four states:
 
 *(proposed)* About 10° of hysteresis at each boundary keeps the guide from flickering when you're near a line. Within Straight, the guide can lean slightly with the exact angle so it feels alive.
 
-*(proposed)* **Legibility.** White with a soft shadow, so it reads over bright sidewalks, dark streets, and neon alike. Tilt it slightly onto the ground plane so it looks painted on the street, not stuck to the glass. Animate with transforms only, at 60 fps.
+**Legibility.** iOS blue at partial opacity with a thin white rim and a soft shadow, so it reads over bright sidewalks, dark streets, and neon alike. *(proposed)* Tilt it slightly onto the ground plane so it looks painted on the street, not stuck to the glass. Animate with transforms only, at 60 fps.
 
 *(proposed)* **Leaving.** A small glass × in the top-right ends navigation and returns home.
 
@@ -369,7 +369,7 @@ The adjustment: guidance math lives in `backend/` even though it runs on the pho
 |---|---|
 | **Bev** | A drink you can grab and go |
 | **Destination** | The one store chosen for this tap |
-| **Guide** | The animated dashed line and arrowhead over the camera |
+| **Guide** | The animated blue line and arrowhead over the camera |
 | **Heading** | The compass direction the back camera faces |
 | **Relative angle** | The angle from your heading to the route; decides the arrow state |
 | **Accuracy circle** | The circle around you, sized to GPS accuracy |
@@ -407,6 +407,7 @@ Decisions from the founding conversation. Add new ones at the bottom.
 | 2026-10-03 | Development builds use fixtures for `/api/find-bev` unless `?live=1`; production is live. Protects the Places free tier |
 | 2026-10-03 | Finding Bev location: after 8 s settle for ≤100 m; at 15 s use the best fix within 200 m (findBev treats the fix as exact), else "Couldn't find you". "Precise Location off" only when every fix is worse than 1 km (cell-only fixes indoors can exceed 500 m) |
 | 2026-10-03 | /api/find-bev client timeout is 12 s, not 10 s: the server's worst case is ~9 s (3 Google calls × 3 s) plus a cold start |
+| 2026-10-03 | The guide is a translucent blue line with a band of light sweeping into a notched arrowhead (1.7 s, like the Finding Bev shimmer), replacing the white dashed line. Matt picked it from five blue, translucent options |
 
 ## References
 
