@@ -20,7 +20,7 @@ const JUMPS: [string, AppState][] = trip
       ["finding", { screen: "finding", attempt: -1 }],
       ["found", { screen: "found", ...trip }],
       ["navigate", { screen: "navigating", ...trip, camera: "denied", compass: "unavailable" }],
-      ["arrived", { screen: "arrived", ...trip }],
+      ["arrived", { screen: "arrived", ...trip, compass: "ok" }],
       ["no location", { screen: "notice", notice: "location-denied" }],
       ["precise off", { screen: "notice", notice: "precise-off" }],
       ["no fix", { screen: "notice", notice: "no-fix" }],

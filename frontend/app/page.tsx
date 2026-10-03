@@ -14,6 +14,7 @@ import { debugKnobs } from "./lib/debug";
 import { detectDevice, readFlags, type Device, type Flags } from "./lib/env";
 import { findFlow } from "./lib/find-flow";
 import { useNavigation } from "./lib/navigation/use-navigation";
+import { prefetchMaps } from "./components/minimap/maps";
 import { openRearCamera, stopStream } from "./lib/sensors/camera";
 import { fixedLocation, realLocation } from "./lib/sensors/location";
 import { requestMotionPermission } from "./lib/sensors/permissions";
@@ -86,6 +87,11 @@ export default function BevMaps() {
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [findingAttempt, env]);
+
+  // The minimap's Maps API downloads while the user reads the Found screen.
+  useEffect(() => {
+    if (state.screen === "found") prefetchMaps();
+  }, [state.screen]);
 
   // Back on Home or showing a notice: the trip is over, release its sensors.
   useEffect(() => {
@@ -161,7 +167,7 @@ export default function BevMaps() {
 
   const getTripSignal = useCallback(() => sessionRef.current?.signal, []);
   const trip = state.screen === "navigating" || state.screen === "arrived" ? state : null;
-  const { view } = useNavigation({
+  const { view, live } = useNavigation({
     active: state.screen === "navigating",
     sensors,
     route: trip?.route ?? null,
@@ -202,6 +208,7 @@ export default function BevMaps() {
           state={state as Extract<AppState, { screen: "navigating" | "arrived" }>}
           stream={stream}
           view={view}
+          live={live}
           onCameraLost={onCameraLost}
           onExit={onExit}
         />

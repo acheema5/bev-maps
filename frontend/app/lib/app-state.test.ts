@@ -87,7 +87,7 @@ describe("appReducer: navigating", () => {
     expect(appReducer(nav, { type: "ROUTE_UPDATED", route: newRoute })).toMatchObject({ route: newRoute });
     expect(appReducer(nav, { type: "COMPASS", compass: "denied" })).toMatchObject({ compass: "denied" });
     expect(appReducer(nav, { type: "ROUTE_UPDATED", route: { ...newRoute, path: [] } })).toBe(nav);
-    expect(appReducer(nav, { type: "ARRIVED" })).toEqual({ screen: "arrived", ...trip });
+    expect(appReducer(nav, { type: "ARRIVED" })).toEqual({ screen: "arrived", ...trip, compass: "pending" });
 
     // A reroute that lands after the user left changes nothing.
     const home = appReducer(nav, { type: "EXIT" });
@@ -97,7 +97,7 @@ describe("appReducer: navigating", () => {
   });
 
   it("EXIT returns home from anywhere", () => {
-    for (const s of [foundState, { screen: "arrived", ...trip } as AppState, finding()]) {
+    for (const s of [foundState, { screen: "arrived", ...trip, compass: "ok" } as AppState, finding()]) {
       expect(appReducer(s, { type: "EXIT" })).toEqual(initialState);
     }
   });

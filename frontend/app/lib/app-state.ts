@@ -29,7 +29,7 @@ export type AppState =
   | ({ screen: "found" } & Trip)
   | ({ screen: "starting" } & Trip)
   | ({ screen: "navigating"; camera: CameraStatus; compass: CompassStatus } & Trip)
-  | ({ screen: "arrived" } & Trip)
+  | ({ screen: "arrived"; compass: CompassStatus } & Trip) // compass as it was, so the minimap holds still
   | { screen: "notice"; notice: NoticeKind };
 
 export type AppEvent =
@@ -94,7 +94,7 @@ export function appReducer(state: AppState, event: AppEvent): AppState {
 
     case "ARRIVED":
       if (state.screen !== "navigating") return state;
-      return { screen: "arrived", destination: state.destination, route: state.route };
+      return { screen: "arrived", destination: state.destination, route: state.route, compass: state.compass };
 
     case "EXIT":
       return initialState;

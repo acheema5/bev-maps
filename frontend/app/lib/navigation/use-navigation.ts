@@ -10,7 +10,7 @@ import type { Flags } from "../env";
 import { createHeadingFilter, isHeldUp } from "../sensors/heading";
 import type { Fix } from "../sensors/location";
 import type { NavSensors } from "../sensors/source";
-import { COMPASS_WAIT_MS, GUIDE_MIN_INTERVAL_MS } from "../tuning";
+import { COMPASS_RECOVER_MS, COMPASS_STALE_MS, COMPASS_WAIT_MS, GUIDE_MIN_INTERVAL_MS } from "../tuning";
 import { initialReroute, rerouteLanded, stepReroute } from "./reroute-policy";
 
 /** What the navigate screen renders. Changes at most ~10×/s. */
@@ -59,7 +59,10 @@ export function useNavigation(args: Args): { view: NavView; live: RefObject<NavL
     let heldUp = true;
     let lastGuideMs = -Infinity;
     let reroute = initialReroute;
-    let compassSeen = false;
+    let compassLive = false; // trustworthy readings are arriving
+    let compassDropped = false; // went quiet after working: recover only once readings are steady
+    let recoveringSinceMs: number | null = null;
+    let lastHeadingMs = 0;
     let arrived = false;
 
     const publish = () => setView({ guidance: guidance ?? null, heldUp, fix });
@@ -84,14 +87,17 @@ export function useNavigation(args: Args): { view: NavView; live: RefObject<NavL
       reroute = step.state;
       if (step.reroute && flags) {
         report("reroute", "asking");
-        requestRoute({ origin: fix.position, destination: destination.location }, { flags, signal }).then(
-          (response) => {
-            const ok = response.status === "OK" && isUsableRoute(response.route);
+        requestRoute({ origin: fix.position, destination: destination.location }, { flags, signal })
+          .then((response) => {
+            const ok = response.status === "OK" && Array.isArray(response.route?.path) && isUsableRoute(response.route);
             reroute = rerouteLanded(reroute, ok);
             report("reroute", ok ? "new route" : "failed, keeping route");
             if (ok) dispatch({ type: "ROUTE_UPDATED", route: response.route });
-          },
-        );
+          })
+          .catch(() => {
+            // Never leave a reroute marked in flight, or rerouting stops for the trip.
+            reroute = rerouteLanded(reroute, false);
+          });
       }
       publish();
     };
@@ -105,11 +111,21 @@ export function useNavigation(args: Args): { view: NavView; live: RefObject<NavL
         runGuide();
       },
       heading(trueDeg, timeMs) {
-        if (!compassSeen) {
-          compassSeen = true;
+        const now = performance.now();
+        const gapMs = now - lastHeadingMs;
+        lastHeadingMs = now;
+        heading = filter.push(trueDeg, timeMs);
+        if (!compassLive) {
+          if (compassDropped) {
+            // Interference can flicker readings on and off; don't flip the
+            // screen (and the minimap's size) with every blip.
+            if (recoveringSinceMs === null || gapMs > 500) recoveringSinceMs = now;
+            if (now - recoveringSinceMs < COMPASS_RECOVER_MS) return;
+          }
+          compassLive = true;
+          recoveringSinceMs = null;
           dispatch({ type: "COMPASS", compass: "ok" });
         }
-        heading = filter.push(trueDeg, timeMs);
         live.current.headingDeg = heading;
         if (timeMs - lastGuideMs >= GUIDE_MIN_INTERVAL_MS) {
           lastGuideMs = timeMs;
@@ -129,12 +145,25 @@ export function useNavigation(args: Args): { view: NavView; live: RefObject<NavL
 
     // Motion allowed but no usable reading (no compass, or stuck uncalibrated).
     const compassTimer = setTimeout(() => {
-      if (!compassSeen && latest.current.compass === "pending") dispatch({ type: "COMPASS", compass: "unavailable" });
+      if (!compassLive && latest.current.compass === "pending") dispatch({ type: "COMPASS", compass: "unavailable" });
     }, COMPASS_WAIT_MS);
+
+    // Readings that stop mid-walk (interference, recalibration) would freeze
+    // the arrow on an old heading: hand over to the minimap until they return.
+    const staleCheck = setInterval(() => {
+      if (compassLive && performance.now() - lastHeadingMs > COMPASS_STALE_MS) {
+        compassLive = false;
+        compassDropped = true;
+        heading = null;
+        live.current.headingDeg = null;
+        dispatch({ type: "COMPASS", compass: "unavailable" });
+      }
+    }, 1_000);
 
     return () => {
       stop();
       clearTimeout(compassTimer);
+      clearInterval(staleCheck);
       live.current = { headingDeg: null, fix: null };
       setView(IDLE);
     };
