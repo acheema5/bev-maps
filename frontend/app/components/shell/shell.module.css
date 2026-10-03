@@ -1,0 +1,59 @@
+/* One calm line, centered: the voice for every full-screen message. */
+.center {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 24px) calc(var(--safe-right) + 32px) calc(var(--safe-bottom) + 24px)
+    calc(var(--safe-left) + 32px);
+  text-align: center;
+  font-size: 17px;
+  color: var(--label-secondary);
+}
+
+/* iOS can't lock portrait, so landscape gets a calm request instead. CSS
+   only: a short landscape viewport is a phone on its side. */
+.rotate {
+  composes: center;
+  z-index: 100;
+  display: none;
+  background: var(--bg);
+  color: var(--label);
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .rotate {
+    display: flex;
+  }
+}
+
+.installHint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 20px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--label-secondary);
+  white-space: nowrap;
+  animation: rise 600ms var(--ease-out) 1.2s both;
+}
+
+.shareIcon {
+  width: 15px;
+  height: 18px;
+  flex: none;
+  color: #007aff;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}

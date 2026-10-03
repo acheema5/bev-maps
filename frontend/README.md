@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bev Maps frontend
 
-## Getting Started
+Everything you see and touch: the Find Bev screen, the camera view with its guide arrow, the fog-of-war minimap, sensors, and the Home Screen shell. Read `../VISION.md` and `INSTRUCTIONS.md` before changing anything.
 
-First, run the development server:
+## Run it
+
+From the repo root (one lockfile, so never `npm install` in here):
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev               # http://localhost:3000
+npm test -w frontend      # unit tests (vitest)
+npm run lint -w frontend
+npm run typecheck -w frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A computer gets "Bev Maps lives on your phone." Add a flag to work at a desk (`sim` and `fixture` arrive with the find-bev and sensors PRs):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| URL | What it does |
+|---|---|
+| `/?debug=1` | Allows a computer; debug panel |
+| `/?sim=1` | Simulated walk along the fixture route |
+| `/?fixture=found\|none\|error\|slow` | Force a canned `/api/find-bev` answer |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Camera, location, and compass need HTTPS and a real phone: use the Vercel preview URL in Safari, then Add to Home Screen and test again.
 
-## Learn More
+## Environment
 
-To learn more about Next.js, take a look at the following resources:
+`.env.local` lives in this folder (Next only loads env files from the app directory), never in git:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable | Exposure |
+|---|---|
+| `GOOGLE_MAPS_SERVER_KEY` | Server only. Read by `backend-server` inside `app/api/**` |
+| `NEXT_PUBLIC_GOOGLE_MAPS_KEY` | Browser. Maps JavaScript API only, referrer-restricted |
+| `NEXT_PUBLIC_GOOGLE_MAP_ID` | Browser. Vector Map ID with light and dark styles |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Layout
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Path | What |
+|---|---|
+| `app/page.tsx` | The screen state machine (one URL, no route changes) |
+| `app/lib/app-state.ts` | Its reducer: states, events, transitions |
+| `app/lib/tuning.ts` | Every number we tune on a real sidewalk |
+| `app/components/` | `find-bev/`, `navigate/`, `minimap/`, `shell/` |
+| `app/lib/sensors/` | GPS, compass, camera, permissions |
+| `app/api/**` | Thin wrappers around `backend-server`, the only place it may be imported |
