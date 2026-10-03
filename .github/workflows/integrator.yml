@@ -10,9 +10,10 @@ on:
 
 # Reviews and @claude mentions queue separately. With one shared group, any
 # PR comment (e.g. Vercel's preview bot) cancelled the review in progress.
+# Only reviews cancel: comments (bots included) must not cancel an @claude run.
 concurrency:
   group: integrator-${{ github.event_name == 'pull_request' && 'review' || 'mention' }}-${{ github.event.pull_request.number || github.event.issue.number }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # Automatic review of every PR against the contract, VISION.md, and other open PRs.
