@@ -97,7 +97,7 @@ The guide has four states:
 
 *(proposed)* About 10° of hysteresis at each boundary keeps the guide from flickering when you're near a line. Within Straight, the guide can lean slightly with the exact angle so it feels alive.
 
-**Legibility.** iOS blue at partial opacity with a thin white rim and a soft shadow, so it reads over bright sidewalks, dark streets, and neon alike. *(proposed)* Tilt it slightly onto the ground plane so it looks painted on the street, not stuck to the glass. Animate with transforms only, at 60 fps.
+**Legibility.** iOS blue at partial opacity with a thin white rim and a soft shadow, so it reads over bright sidewalks, dark streets, and neon alike. *(proposed)* Tilt it slightly onto the ground plane so it looks painted on the street, not stuck to the glass. Animate with transforms and SVG dash offsets only, at 60 fps.
 
 *(proposed)* **Leaving.** A small glass × in the top-right ends navigation and returns home.
 
@@ -408,7 +408,7 @@ Decisions from the founding conversation. Add new ones at the bottom.
 | 2026-10-03 | Finding Bev location: after 8 s settle for ≤100 m; at 15 s use the best fix within 200 m (findBev treats the fix as exact), else "Couldn't find you". "Precise Location off" only when every fix is worse than 1 km (cell-only fixes indoors can exceed 500 m) |
 | 2026-10-03 | /api/find-bev client timeout is 12 s, not 10 s: the server's worst case is ~9 s (3 Google calls × 3 s) plus a cold start |
 | 2026-10-03 | #5: a bev is any place open now that sells drinks, cafés included. Convenience stores and supermarkets alone sent a user at Cornell Tech to a Duane Reade 505 m away past an open café 101 m away. Restaurants and bars aren't searched for. If the nearest 20 results are all closed, a second search covers long-hours stores only |
-| 2026-10-03 | The guide is a translucent blue line with a band of light sweeping into a notched arrowhead (1.7 s, like the Finding Bev shimmer), replacing the white dashed line. Matt picked it from five blue, translucent options |
+| 2026-10-03 | The guide is a translucent blue line with a band of light sweeping into a notched arrowhead (1.7 s, like the Finding Bev shimmer), replacing the white dashed line. Matt picked it from five blue, translucent options. The band is three dash-offset strokes inside one SVG mask; verify 60 fps on a real iPhone |
 
 ## References
 

@@ -18,7 +18,7 @@ Also read `VISION.md` (what we build) and `frontend/AGENTS.md` (this is Next.js 
 |---|---|---|
 | Screen state machine | `app/page.tsx` | One screen: Home → Finding → Found → Navigate → Arrived, plus edge states. No route changes between steps (keeps camera permission alive) |
 | Find Bev button and Finding Bev shimmer | `app/components/find-bev/` | Apple glass, system font stack (SF Pro), shimmer as the loading indicator |
-| Camera view and four-state guide | `app/components/navigate/` | Full-screen rear camera; dashed-line arrow: STRAIGHT, LEFT, RIGHT, U_TURN |
+| Camera view and four-state guide | `app/components/navigate/` | Full-screen rear camera; blue shimmer line and arrowhead: STRAIGHT, LEFT, RIGHT, U_TURN |
 | Minimap and fog of war rendering | `app/components/minimap/` | Top-left, accuracy circle, heading triangle, dark layer over color layer, revealed circles masked out |
 | Sensors and permissions | `app/lib/sensors/` | GPS, compass (`webkitCompassHeading`), camera. Location on the Find Bev tap; camera and motion on the Enable camera tap |
 | API route wrappers | `app/api/find-bev/route.ts`, `app/api/route/route.ts` | Thin: parse JSON → call Arjun's function → return JSON. No logic |
