@@ -15,9 +15,29 @@ const ROUTES_COMPUTE_URL = "https://routes.googleapis.com/directions/v2:computeR
 // becomes an ERROR response instead of a function timeout.
 const REQUEST_TIMEOUT_MS = 3000;
 
-// The grab-and-go place types VISION.md scopes v1 to: convenience stores
-// and supermarkets, not pharmacies/gas stations/cafes/liquor stores.
-export const INCLUDED_PLACE_TYPES = ["convenience_store", "supermarket"];
+// VISION.md decision #5: a bev is any place open now that sells drinks.
+// A place matches if any of its types is listed (not just its primary type).
+// Sit-down restaurants and bars stay out.
+export const INCLUDED_PLACE_TYPES = [
+  // Stores
+  "convenience_store",
+  "supermarket",
+  "grocery_store",
+  "liquor_store",
+  "drugstore",
+  "pharmacy",
+  "gas_station",
+  // Drinks first
+  "cafe",
+  "coffee_shop",
+  "tea_house",
+  "juice_shop",
+  // Counters that always sell drinks
+  "deli",
+  "bakery",
+  "bagel_shop",
+  "donut_shop",
+];
 
 export function isValidLatLng(p: unknown): p is LatLng {
   const q = p as LatLng | null | undefined;
