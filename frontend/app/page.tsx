@@ -12,7 +12,9 @@ import { RotateOverlay } from "./components/shell/rotate-overlay";
 import { appReducer, initialState, type AppState } from "./lib/app-state";
 import { detectDevice, readFlags, type Device, type Flags } from "./lib/env";
 import { findFlow } from "./lib/find-flow";
+import { openRearCamera, stopStream } from "./lib/sensors/camera";
 import { fixedLocation, realLocation } from "./lib/sensors/location";
+import { requestMotionPermission } from "./lib/sensors/permissions";
 import { Session } from "./lib/session";
 import styles from "./page.module.css";
 
@@ -34,6 +36,7 @@ export default function BevMaps() {
   // just the backdrop, so a computer never flashes the Home screen.
   const [env, setEnv] = useState<Env | null>(null);
   const sessionRef = useRef<Session | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   useEffect(() => {
     // A one-time read of the browser environment after mount.
@@ -84,15 +87,53 @@ export default function BevMaps() {
     if (state.screen === "home" || state.screen === "notice") {
       sessionRef.current?.end();
       sessionRef.current = null;
+      // Ending the trip already stopped the tracks; drop the dead stream.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setStream(null);
     }
   }, [state.screen]);
 
-  // Enable camera. Camera and compass permissions land with the sensors PR;
-  // until then navigation opens without them.
-  const onEnableCamera = useCallback(() => {
-    dispatch({ type: "START" });
-    dispatch({ type: "STARTED", camera: "denied", compass: "unavailable" });
+  // Hands a camera stream to the trip, so ending the trip stops it, and to
+  // the screen. A stream that arrives after the trip ended is stopped at once.
+  const adoptStream = useCallback((session: Session, next: MediaStream | null) => {
+    if (!next) return;
+    session.own(() => stopStream(next));
+    if (!session.ended) setStream(next);
   }, []);
+
+  // Enable camera: one tap grants camera and compass together (VISION → 3.
+  // Found). Order matters on iPhone: the motion prompt needs the tap's user
+  // gesture, which doesn't survive waiting on the camera prompt, so it goes
+  // first, synchronously, before anything is awaited.
+  const onEnableCamera = useCallback(() => {
+    const session = sessionRef.current;
+    if (!env || !session || session.ended || session.starting) return;
+    session.starting = true; // a second tap during the prompts does nothing
+    const motion = env.flags.sim ? Promise.resolve("granted" as const) : requestMotionPermission();
+    const camera = openRearCamera();
+    dispatch({ type: "START" });
+    Promise.all([motion, camera]).then(([motionAnswer, cameraStream]) => {
+      adoptStream(session, cameraStream);
+      if (session.ended) return;
+      dispatch({
+        type: "STARTED",
+        camera: cameraStream ? "live" : "denied",
+        compass: motionAnswer === "granted" ? "pending" : "denied",
+      });
+    });
+  }, [env, adoptStream]);
+
+  // iOS can end the camera while the app is in the background. Try to get it
+  // back; if that fails, carry on over the dark background.
+  const onCameraLost = useCallback(() => {
+    const session = sessionRef.current;
+    if (!session || session.ended) return;
+    openRearCamera().then((next) => {
+      adoptStream(session, next);
+      if (!session.ended) dispatch({ type: "CAMERA", camera: next ? "live" : "denied" });
+      if (!next) setStream(null);
+    });
+  }, [adoptStream]);
 
   const onExit = useCallback(() => dispatch({ type: "EXIT" }), []);
 
@@ -122,7 +163,12 @@ export default function BevMaps() {
       {homeScreen ? (
         <HomeStage state={homeScreen} onFind={onFind} onEnableCamera={onEnableCamera} />
       ) : (
-        <NavigateScreen state={state as Extract<AppState, { screen: "navigating" | "arrived" }>} onExit={onExit} />
+        <NavigateScreen
+          state={state as Extract<AppState, { screen: "navigating" | "arrived" }>}
+          stream={stream}
+          onCameraLost={onCameraLost}
+          onExit={onExit}
+        />
       )}
       {state.screen === "home" && device.isIOS && !device.isStandalone && <InstallHint />}
       <RotateOverlay />

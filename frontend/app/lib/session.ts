@@ -15,6 +15,8 @@ export class Session {
   readonly fixes: Fix[] = [];
   latest: Fix | null = null;
   locationDenied = false;
+  /** Enable camera was tapped; its permission prompts are in flight or done. */
+  starting = false;
 
   constructor(location: LocationSource) {
     this.stopLocation = location.start(
