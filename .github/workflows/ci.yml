@@ -16,5 +16,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint -w frontend
       - run: npm run build
       - run: npm test
+      # Frontend end-to-end: the whole loop at iPhone size (frontend/e2e).
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -w frontend
