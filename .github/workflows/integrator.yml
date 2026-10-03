@@ -8,8 +8,10 @@ on:
   pull_request_review_comment:
     types: [created]
 
+# Reviews and @claude mentions queue separately. With one shared group, any
+# PR comment (e.g. Vercel's preview bot) cancelled the review in progress.
 concurrency:
-  group: integrator-${{ github.event.pull_request.number || github.event.issue.number }}
+  group: integrator-${{ github.event_name == 'pull_request' && 'review' || 'mention' }}-${{ github.event.pull_request.number || github.event.issue.number }}
   cancel-in-progress: true
 
 jobs:
