@@ -153,3 +153,16 @@ test("throwing localStorage: recordPosition no-ops, revealedPoints returns []", 
   assert.doesNotThrow(() => recordPosition(SF, 5));
   assert.deepEqual(revealedPoints(), []);
 });
+
+test("localStorage getter that throws: recordPosition no-ops, revealedPoints returns []", async () => {
+  const win = {};
+  Object.defineProperty(win, "localStorage", {
+    get() {
+      throw new Error("SecurityError");
+    },
+  });
+  (globalThis as Record<string, unknown>).window = win;
+  const { recordPosition, revealedPoints } = await freshFog();
+  assert.doesNotThrow(() => recordPosition(SF, 5));
+  assert.deepEqual(revealedPoints(), []);
+});

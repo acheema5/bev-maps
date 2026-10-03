@@ -24,7 +24,13 @@ export const REVEAL_RADIUS_M = 15;
 let cache: LatLng[] | undefined;
 
 function hasLocalStorage(): boolean {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  // Reading window.localStorage itself throws a SecurityError when site data
+  // is blocked (some browsers, sandboxed iframes, WebViews).
+  try {
+    return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  } catch {
+    return false;
+  }
 }
 
 function loadPoints(): LatLng[] {
