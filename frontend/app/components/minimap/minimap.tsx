@@ -90,7 +90,8 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
 
       // When the loop stops (arrival) both go null: hold the last view still.
       const liveNow = live.current?.fix != null;
-      const compass = liveNow ? (live.current?.headingDeg ?? null) : lastHeading.current;
+      const reading = live.current?.headingDeg;
+      const compass = liveNow ? (typeof reading === "number" && Number.isFinite(reading) ? reading : null) : lastHeading.current;
       lastHeading.current = compass;
       const rotates = headingUp && compass !== null && (!maps || maps.canRotate());
       const heading = rotates ? compass : 0;

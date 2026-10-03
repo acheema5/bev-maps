@@ -75,6 +75,12 @@ export function getMinimapMaps(
   configure();
   created ??= (async () => {
     const [{ Map, RenderingType }, { ColorScheme }] = await Promise.all([importLibrary("maps"), importLibrary("core")]);
+    // The minimap that asked may have closed while the library loaded. Creating
+    // the maps off-screen would make them raster for good: try again next time.
+    if (!hosts.dark.isConnected || !hosts.light.isConnected) {
+      created = null;
+      return null;
+    }
     const make = (colorScheme: google.maps.ColorScheme, host: HTMLElement) => {
       const el = document.createElement("div");
       el.style.cssText = "position:absolute;inset:0;";
