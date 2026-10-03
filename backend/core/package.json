@@ -4,7 +4,14 @@
   "private": true,
   "main": "index.ts",
   "types": "index.ts",
+  "scripts": {
+    "test": "tsx --test *.test.ts"
+  },
   "dependencies": {
     "shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsx": "^4.23.15"
   }
 }
