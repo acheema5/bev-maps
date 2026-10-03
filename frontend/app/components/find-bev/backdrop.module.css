@@ -4,7 +4,13 @@
    only for motion. */
 .backdrop {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* The large viewport: in a Safari tab the light continues under the
+     toolbar instead of stopping above it and leaving a flat strip. */
+  height: 100lvh;
+  min-height: 100%;
   overflow: hidden;
   background: var(--bg);
 }
