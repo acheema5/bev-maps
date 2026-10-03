@@ -1,0 +1,95 @@
+/* VISION → 5. The minimap: upper-left, like Call of Duty. A rounded square
+   (not a circle) so Google's logo and attribution, bottom corners, are never
+   clipped. The ring is glass; the map inside is opaque. */
+.frame {
+  position: absolute;
+  top: calc(var(--safe-top) + 10px);
+  left: calc(var(--safe-left) + 10px);
+  padding: 4px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.3),
+    0 6px 22px rgba(0, 0, 0, 0.32);
+  pointer-events: none;
+  animation: appear 420ms var(--ease-out) both;
+}
+
+.map {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #121214;
+}
+
+.layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* The colored map's window: everything but the bottom strip, where the dark
+   map's logo and attribution always show. */
+.clip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Tile-less minimap (no Maps key yet): explored ground is lighter. */
+.explored {
+  background: radial-gradient(circle at 50% 50%, #4a4a52, #3a3a42);
+}
+
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+}
+
+.route {
+  fill: none;
+  stroke: rgba(10, 132, 255, 0.5);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pin {
+  fill: #fff;
+  stroke: #0a84ff;
+  stroke-width: 2.5;
+}
+
+.accuracy {
+  fill: rgba(10, 132, 255, 0.16);
+  stroke: rgba(10, 132, 255, 0.4);
+  stroke-width: 1;
+}
+
+.dot {
+  fill: #0a84ff;
+  stroke: #fff;
+  stroke-width: 2.5;
+}
+
+.triangle {
+  fill: #fff;
+  stroke: #0a84ff;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}

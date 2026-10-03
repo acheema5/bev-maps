@@ -21,6 +21,7 @@ export const REROUTE_MIN_INTERVAL_MS = 15_000;
 // Navigate: heading.
 export const HEADING_TAU_MS = 200; // low-pass time constant for the compass
 export const COMPASS_WAIT_MS = 5_000; // no trustworthy reading by now → compass "unavailable"
+export const COMPASS_STALE_MS = 3_000; // readings stop mid-walk this long → "unavailable" until they return
 export const GUIDE_MIN_INTERVAL_MS = 100; // re-run guide() on heading ticks at most 10×/s
 export const HOLD_UP_SHOW_DEG = 40; // phone pitch (beta) below this → "Hold your phone up"
 export const HOLD_UP_HIDE_DEG = 50; // …and back above this hides it

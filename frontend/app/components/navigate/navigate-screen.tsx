@@ -1,7 +1,10 @@
 "use client";
 
+import type { RefObject } from "react";
 import type { AppState } from "../../lib/app-state";
-import type { NavView } from "../../lib/navigation/use-navigation";
+import type { NavLive, NavView } from "../../lib/navigation/use-navigation";
+import { MINIMAP_PT } from "../../lib/tuning";
+import { Minimap } from "../minimap/minimap";
 import { ArrivedCard } from "./arrived-card";
 import { CameraView } from "./camera-view";
 import { Guide } from "./guide";
@@ -11,6 +14,7 @@ type Props = {
   state: Extract<AppState, { screen: "navigating" | "arrived" }>;
   stream: MediaStream | null;
   view: NavView;
+  live: RefObject<NavLive>;
   onCameraLost: () => void;
   onExit: () => void;
 };
@@ -18,7 +22,7 @@ type Props = {
 // The camera view (VISION → 4. Navigate): live camera, the guide, and the way
 // out. Without a camera the background stays dark and navigation carries on;
 // without a compass the guide hides and the minimap takes over (Edge states).
-export function NavigateScreen({ state, stream, view, onCameraLost, onExit }: Props) {
+export function NavigateScreen({ state, stream, view, live, onCameraLost, onExit }: Props) {
   const arrived = state.screen === "arrived";
   const compass = state.screen === "navigating" ? state.compass : "ok";
   const steering = compass === "ok" && view.guidance !== null;
@@ -36,6 +40,15 @@ export function NavigateScreen({ state, stream, view, onCameraLost, onExit }: Pr
           hidden={!steering || !view.heldUp || arrived}
         />
       )}
+
+      <Minimap
+        route={state.route}
+        destination={state.destination}
+        live={live}
+        headingUp={compass === "ok"}
+        // No compass: the guide can't steer, so the minimap grows and takes over (VISION → Edge states).
+        size={compass === "denied" || compass === "unavailable" ? 260 : MINIMAP_PT}
+      />
 
       {holdUp && <p className={`glass-dark ${styles.pill} ${styles.holdUp}`}>Hold your phone up</p>}
       {compass === "denied" && !arrived && (
