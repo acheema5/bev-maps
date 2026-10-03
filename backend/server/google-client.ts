@@ -10,9 +10,26 @@ const PLACES_SEARCH_NEARBY_URL = "https://places.googleapis.com/v1/places:search
 const ROUTES_MATRIX_URL = "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix";
 const ROUTES_COMPUTE_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
 
+// Per-request timeout. findBev makes up to 3 calls, so the worst case stays
+// under the frontend's ~10s "Finding Bev" limit, and a hung Google call
+// becomes an ERROR response instead of a function timeout.
+const REQUEST_TIMEOUT_MS = 3000;
+
 // The grab-and-go place types VISION.md scopes v1 to: convenience stores
 // and supermarkets, not pharmacies/gas stations/cafes/liquor stores.
 export const INCLUDED_PLACE_TYPES = ["convenience_store", "supermarket"];
+
+export function isValidLatLng(p: unknown): p is LatLng {
+  const q = p as LatLng | null | undefined;
+  return (
+    typeof q?.lat === "number" &&
+    typeof q?.lng === "number" &&
+    Number.isFinite(q.lat) &&
+    Number.isFinite(q.lng) &&
+    Math.abs(q.lat) <= 90 &&
+    Math.abs(q.lng) <= 180
+  );
+}
 
 export type PlaceCandidate = {
   placeId: string;
@@ -40,6 +57,7 @@ export async function searchNearby(
 ): Promise<PlaceCandidate[]> {
   const res = await fetch(PLACES_SEARCH_NEARBY_URL, {
     method: "POST",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     headers: {
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
@@ -49,6 +67,8 @@ export async function searchNearby(
     body: JSON.stringify({
       includedTypes: INCLUDED_PLACE_TYPES,
       maxResultCount: 20,
+      // Default is POPULARITY; we need the nearest stores in the top 20.
+      rankPreference: "DISTANCE",
       locationRestriction: {
         circle: {
           center: { latitude: origin.lat, longitude: origin.lng },
@@ -62,17 +82,22 @@ export async function searchNearby(
   const data = await res.json();
   const places: unknown[] = Array.isArray(data?.places) ? data.places : [];
 
-  return places.map((p: any): PlaceCandidate => {
+  return places.flatMap((p: any): PlaceCandidate[] => {
+    const location = { lat: p.location?.latitude, lng: p.location?.longitude };
+    // Skip places we can't route to.
+    if (typeof p.id !== "string" || !isValidLatLng(location)) return [];
     const types: string[] = Array.isArray(p.types) ? p.types : [];
     const kind = types.find((t) => INCLUDED_PLACE_TYPES.includes(t)) ?? types[0] ?? "unknown";
-    return {
-      placeId: p.id,
-      name: p.displayName?.text ?? "Unknown",
-      kind,
-      location: { lat: p.location?.latitude, lng: p.location?.longitude },
-      openNow: p.currentOpeningHours?.openNow === true,
-      closesAt: p.currentOpeningHours?.nextCloseTime,
-    };
+    return [
+      {
+        placeId: p.id,
+        name: p.displayName?.text ?? "Unknown",
+        kind,
+        location,
+        openNow: p.currentOpeningHours?.openNow === true,
+        closesAt: p.currentOpeningHours?.nextCloseTime,
+      },
+    ];
   });
 }
 
@@ -103,6 +128,7 @@ export async function computeRouteMatrix(
 ): Promise<RouteMatrixEntry[]> {
   const res = await fetch(ROUTES_MATRIX_URL, {
     method: "POST",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     headers: {
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
@@ -184,6 +210,7 @@ export async function computeRoutes(
 ): Promise<WalkingRoute> {
   const res = await fetch(ROUTES_COMPUTE_URL, {
     method: "POST",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     headers: {
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
@@ -205,8 +232,14 @@ export async function computeRoutes(
     throw new Error("computeRoutes returned no routes");
   }
 
+  const path = decodePolyline(route.polyline?.encodedPolyline ?? "");
+  // guide() and the minimap need a line, not a point.
+  if (path.length < 2) {
+    throw new Error("computeRoutes returned a route without a usable path");
+  }
+
   return {
-    path: decodePolyline(route.polyline?.encodedPolyline ?? ""),
+    path,
     distanceM: route.distanceMeters,
     durationS: parseDurationSeconds(route.duration),
   };

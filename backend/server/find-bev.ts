@@ -3,6 +3,7 @@ import {
   computeRouteMatrix,
   computeRoutes,
   haversineDistanceM,
+  isValidLatLng,
   searchNearby,
   type PlaceCandidate,
 } from "./google-client";
@@ -12,10 +13,12 @@ import {
 // frontend/app/api/find-bev route that calls findBev() directly.
 // See VISION.md > "How a bev gets found".
 
-// Start at about a 15-minute walk, doubling up to a ~3km cap before
-// giving up (VISION.md "Walking range").
-const START_RADIUS_M = 1200;
-const RADIUS_CAP_M = 3000;
+// VISION.md "Walking range": out to about a 15-minute walk (~1.2 km), then
+// "No bev open nearby". searchNearby ranks by distance, so one search at the
+// full range already returns the nearest stores; widening in smaller steps
+// would only add (Enterprise-tier) Places calls.
+const SEARCH_RADIUS_M = 1200;
+const MAX_WALK_S = 15 * 60;
 
 // Shortlist size for the walking-time ranking step.
 const SHORTLIST_SIZE = 5;
@@ -26,42 +29,36 @@ const CLOSING_BUFFER_S = 5 * 60;
 
 export async function findBev(request: FindBevRequest): Promise<FindBevResponse> {
   try {
+    if (!isValidLatLng(request?.origin)) {
+      return { status: "ERROR", message: "invalid origin" };
+    }
+
     const apiKey = process.env.GOOGLE_MAPS_SERVER_KEY;
     if (!apiKey) {
       return { status: "ERROR", message: "GOOGLE_MAPS_SERVER_KEY is not configured" };
     }
 
-    let radiusM = START_RADIUS_M;
-    let lastRadiusSearched = radiusM;
+    const candidates = await searchNearby(apiKey, request.origin, SEARCH_RADIUS_M);
+    const openNow = candidates.filter((c) => c.openNow);
 
-    while (true) {
-      lastRadiusSearched = radiusM;
+    if (openNow.length > 0) {
+      const shortlist = nearestN(request.origin, openNow, SHORTLIST_SIZE);
+      const winner = await pickOpenOnArrival(apiKey, request.origin, shortlist);
 
-      const candidates = await searchNearby(apiKey, request.origin, radiusM);
-      const openNow = candidates.filter((c) => c.openNow);
-
-      if (openNow.length > 0) {
-        const shortlist = nearestN(request.origin, openNow, SHORTLIST_SIZE);
-        const winner = await pickOpenOnArrival(apiKey, request.origin, shortlist);
-
-        if (winner) {
-          const route = await computeRoutes(apiKey, request.origin, winner.location);
-          const destination: Destination = {
-            placeId: winner.placeId,
-            name: winner.name,
-            kind: winner.kind,
-            location: winner.location,
-            closesAt: winner.closesAt,
-          };
-          return { status: "FOUND", destination, route };
-        }
+      if (winner) {
+        const route = await computeRoutes(apiKey, request.origin, winner.location);
+        const destination: Destination = {
+          placeId: winner.placeId,
+          name: winner.name,
+          kind: winner.kind,
+          location: winner.location,
+          closesAt: winner.closesAt,
+        };
+        return { status: "FOUND", destination, route };
       }
-
-      if (radiusM >= RADIUS_CAP_M) break;
-      radiusM = Math.min(radiusM * 2, RADIUS_CAP_M);
     }
 
-    return { status: "NONE_NEARBY", searchedRadiusM: lastRadiusSearched };
+    return { status: "NONE_NEARBY", searchedRadiusM: SEARCH_RADIUS_M };
   } catch (err) {
     return { status: "ERROR", message: err instanceof Error ? err.message : String(err) };
   }
@@ -79,8 +76,8 @@ function nearestN(
 
 /**
  * Ranks the shortlist by walking time (shortest first) and returns the
- * first candidate that would still be open on arrival, or undefined if
- * none qualify.
+ * first candidate within MAX_WALK_S that would still be open on arrival,
+ * or undefined if none qualify.
  */
 async function pickOpenOnArrival(
   apiKey: string,
@@ -98,7 +95,10 @@ async function pickOpenOnArrival(
 
   const ranked = shortlist
     .map((candidate, index) => ({ candidate, durationS: durationByIndex.get(index) }))
-    .filter((entry): entry is { candidate: PlaceCandidate; durationS: number } => entry.durationS !== undefined)
+    .filter(
+      (entry): entry is { candidate: PlaceCandidate; durationS: number } =>
+        entry.durationS !== undefined && entry.durationS <= MAX_WALK_S
+    )
     .sort((a, b) => a.durationS - b.durationS);
 
   const now = Date.now();

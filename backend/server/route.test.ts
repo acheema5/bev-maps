@@ -88,3 +88,15 @@ test("getRoute: a non-OK API response is caught and mapped to ERROR", async () =
 
   assert.equal(result.status, "ERROR");
 });
+
+test("getRoute: invalid origin or destination returns ERROR without calling fetch", async () => {
+  global.fetch = (async () => {
+    throw new Error("fetch should not be called");
+  }) as typeof fetch;
+
+  const badOrigin = await getRoute({ origin: { lat: NaN, lng: 0 }, destination: DESTINATION });
+  assert.deepEqual(badOrigin, { status: "ERROR", message: "invalid origin" });
+
+  const badDestination = await getRoute({ origin: ORIGIN, destination: { lat: 0, lng: 200 } });
+  assert.deepEqual(badDestination, { status: "ERROR", message: "invalid destination" });
+});

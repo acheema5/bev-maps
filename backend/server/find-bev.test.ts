@@ -110,7 +110,7 @@ test("findBev: a closed nearer candidate is skipped for the next open one", asyn
     { originIndex: 0, destinationIndex: 0, duration: "200s", distanceMeters: 220, condition: "ROUTE_EXISTS" },
   ];
   const route = {
-    routes: [{ duration: "200s", distanceMeters: 220, polyline: { encodedPolyline: "_p~iF~ps|U" } }],
+    routes: [{ duration: "200s", distanceMeters: 220, polyline: { encodedPolyline: "_p~iF~ps|U_ulLnnqC" } }],
   };
 
   global.fetch = routeUrlDispatch({
@@ -157,7 +157,7 @@ test("findBev: a candidate closing before arrival is skipped for the next-shorte
     { originIndex: 0, destinationIndex: 1, duration: "300s", distanceMeters: 320, condition: "ROUTE_EXISTS" },
   ];
   const route = {
-    routes: [{ duration: "300s", distanceMeters: 320, polyline: { encodedPolyline: "_p~iF~ps|U" } }],
+    routes: [{ duration: "300s", distanceMeters: 320, polyline: { encodedPolyline: "_p~iF~ps|U_ulLnnqC" } }],
   };
 
   global.fetch = routeUrlDispatch({
@@ -173,7 +173,7 @@ test("findBev: a candidate closing before arrival is skipped for the next-shorte
   assert.equal(result.destination.placeId, "stays-open");
 });
 
-test("findBev: returns NONE_NEARBY after widening to the radius cap with nothing open", async () => {
+test("findBev: returns NONE_NEARBY after one ~15-minute-walk search with nothing open", async () => {
   let searchCalls = 0;
   global.fetch = routeUrlDispatch({
     searchNearby: () => {
@@ -186,8 +186,8 @@ test("findBev: returns NONE_NEARBY after widening to the radius cap with nothing
 
   assert.equal(result.status, "NONE_NEARBY");
   if (result.status !== "NONE_NEARBY") return;
-  assert.equal(result.searchedRadiusM, 3000);
-  assert.equal(searchCalls, 3); // 1200 -> 2400 -> 3000
+  assert.equal(result.searchedRadiusM, 1200);
+  assert.equal(searchCalls, 1);
 });
 
 test("findBev: missing GOOGLE_MAPS_SERVER_KEY returns ERROR without calling fetch", async () => {
@@ -218,6 +218,99 @@ test("findBev: a network failure is caught and mapped to ERROR", async () => {
 test("findBev: a non-OK API response is caught and mapped to ERROR", async () => {
   global.fetch = routeUrlDispatch({
     searchNearby: () => jsonResponse({ error: "bad request" }, false, 400),
+  }) as typeof fetch;
+
+  const result = await findBev({ origin: ORIGIN, accuracyM: 10 });
+
+  assert.equal(result.status, "ERROR");
+});
+
+test("findBev: searches by distance with a timeout on every request", async () => {
+  const places = loadFixture("places-searchNearby.json");
+  const matrix = loadFixture("routes-computeRouteMatrix.json");
+  const route = loadFixture("routes-computeRoutes.json");
+  const seen: { url: string; body: any; hasSignal: boolean }[] = [];
+
+  const dispatch = routeUrlDispatch({
+    searchNearby: () => jsonResponse(places),
+    computeRouteMatrix: () => jsonResponse(matrix),
+    computeRoutes: () => jsonResponse(route),
+  });
+  global.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    seen.push({
+      url: url.toString(),
+      body: JSON.parse(String(init?.body)),
+      hasSignal: init?.signal instanceof AbortSignal,
+    });
+    return dispatch(url);
+  }) as typeof fetch;
+
+  await findBev({ origin: ORIGIN, accuracyM: 10 });
+
+  assert.equal(seen.length, 3);
+  assert.ok(seen.every((r) => r.hasSignal));
+  const search = seen.find((r) => r.url.includes("searchNearby"));
+  assert.equal(search?.body.rankPreference, "DISTANCE");
+});
+
+test("findBev: stores more than a 15-minute walk away are not returned", async () => {
+  const places = loadFixture("places-searchNearby.json");
+  const route = loadFixture("routes-computeRoutes.json");
+  global.fetch = routeUrlDispatch({
+    searchNearby: () => jsonResponse(places),
+    computeRouteMatrix: () =>
+      jsonResponse([
+        { originIndex: 0, destinationIndex: 0, duration: "1200s", distanceMeters: 1500, condition: "ROUTE_EXISTS" },
+        { originIndex: 0, destinationIndex: 1, duration: "1300s", distanceMeters: 1600, condition: "ROUTE_EXISTS" },
+        { originIndex: 0, destinationIndex: 2, duration: "1400s", distanceMeters: 1700, condition: "ROUTE_EXISTS" },
+      ]),
+    computeRoutes: () => jsonResponse(route),
+  }) as typeof fetch;
+
+  const result = await findBev({ origin: ORIGIN, accuracyM: 10 });
+
+  assert.equal(result.status, "NONE_NEARBY");
+});
+
+test("findBev: invalid origin returns ERROR without calling fetch", async () => {
+  global.fetch = (async () => {
+    throw new Error("fetch should not be called");
+  }) as typeof fetch;
+
+  for (const origin of [
+    { lat: NaN, lng: 0 },
+    { lat: 91, lng: 0 },
+    { lat: 0, lng: -181 },
+    undefined as unknown as { lat: number; lng: number },
+  ]) {
+    const result = await findBev({ origin, accuracyM: 10 });
+    assert.equal(result.status, "ERROR");
+    if (result.status !== "ERROR") return;
+    assert.equal(result.message, "invalid origin");
+  }
+});
+
+test("findBev: places without a location are skipped", async () => {
+  const places = loadFixture("places-searchNearby.json") as { places: any[] };
+  const noLocation = {
+    places: places.places.map((p) => ({ ...p, location: undefined })),
+  };
+  global.fetch = routeUrlDispatch({
+    searchNearby: () => jsonResponse(noLocation),
+  }) as typeof fetch;
+
+  const result = await findBev({ origin: ORIGIN, accuracyM: 10 });
+
+  assert.equal(result.status, "NONE_NEARBY");
+});
+
+test("findBev: a route with no polyline is an ERROR, not FOUND with an empty path", async () => {
+  const places = loadFixture("places-searchNearby.json");
+  const matrix = loadFixture("routes-computeRouteMatrix.json");
+  global.fetch = routeUrlDispatch({
+    searchNearby: () => jsonResponse(places),
+    computeRouteMatrix: () => jsonResponse(matrix),
+    computeRoutes: () => jsonResponse({ routes: [{ duration: "120s", distanceMeters: 150 }] }),
   }) as typeof fetch;
 
   const result = await findBev({ origin: ORIGIN, accuracyM: 10 });
