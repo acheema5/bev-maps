@@ -56,3 +56,15 @@
     transform: translate3d(-4vmax, 8vmax, 0) scale(0.97);
   }
 }
+
+/* The status bar is black-translucent (white clock and battery) so the
+   camera can run under it. On this off-white Home, a very faint gray fade
+   keeps them readable. Sized off the safe area, so it's gone in a Safari tab. */
+.statusFade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--safe-top) * 1.6);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.08) 55%, rgba(0, 0, 0, 0));
+}

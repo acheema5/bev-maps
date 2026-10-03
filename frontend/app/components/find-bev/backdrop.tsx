@@ -6,6 +6,7 @@ export function Backdrop() {
       <div className={`${styles.light} ${styles.one}`} />
       <div className={`${styles.light} ${styles.two}`} />
       <div className={`${styles.light} ${styles.three}`} />
+      <div className={styles.statusFade} />
     </div>
   );
 }
