@@ -123,8 +123,12 @@ Each is one calm line in the same glass style, never a wall of text.
 | Location permission denied | "Bev Maps needs your location to find a bev." + how to turn it on |
 | Nothing open within walking range | "No bev open nearby." + Try again |
 | Camera denied | Navigation continues: the guide over a dark background, minimap as usual |
-| Compass or motion denied | Ask once more; otherwise enlarge the minimap and show the route line |
+| Compass or motion denied | iPhone remembers a denial until the app is relaunched, so the "ask once more" is the line "Reopen Bev Maps to allow compass". Meanwhile: enlarge the minimap and show the route line |
+| Compass gives no usable reading | Same as denied, without the reopen hint |
 | Weak GPS | Stay on Finding Bev a little longer while accuracy improves |
+| Precise Location off | Fixes stay city-sized and never improve: one line on where to turn Precise Location on |
+| No usable GPS fix in time | "Couldn't find you. Step outside and try again." + Try again |
+| Phone turned sideways | "Turn your phone upright" (iPhone can't lock a web app to portrait) |
 | Phone held flat | "Hold your phone up" |
 | Network error | "Couldn't reach Bev." + Try again |
 | Opened in a Safari tab, not installed | A small hint: Share → Add to Home Screen |
@@ -326,14 +330,14 @@ One Vercel project. `frontend/` is the deployed app; its `/api/*` routes are thi
 - Find Bev, the Finding Bev shimmer, the Found screen, arrival, and edge states
 - Full-screen rear camera and the animated four-state guide
 - Minimap rendering: dark and color layers, fog mask, accuracy circle, heading triangle
-- Sensors and permissions: reads raw GPS, compass, and camera, and hands values to `backend/core/`
+- Sensors and permissions: reads raw GPS, compass, and camera; smooths the compass and converts magnetic to true north; hands values to `backend/core/`. Owns the reroute timing (`offRoute` held ~5 s, at most every ~15 s)
 - Home Screen shell: manifest, icon, standalone mode, safe areas, install hint
 
 **Backend: everything that finds, routes, and computes** · owner: Arjun (@acheema5)
 
 - `/api/find-bev` and `/api/route`: candidate search, open-now and open-on-arrival filters, walking-time ranking, routing
 - Google Maps Platform keys, field masks, budget alert
-- Guidance: route snapping, look-ahead target, arrow state, off-route, arrival, heading smoothing
+- Guidance: route snapping, look-ahead target, arrow state, off-route, arrival
 - Fog of war data: what's revealed, saved on the phone
 - Fixtures and a **simulated walk** (fake GPS and heading moving along a recorded route, e.g. `?sim=1`) so the frontend can be built and demoed at a desk
 
@@ -386,6 +390,18 @@ Decisions from the founding conversation. Add new ones at the bottom.
 | 2026-10-02 | Photo capture deferred to v2 |
 | 2026-10-02 | User-added locations, points, and profiles deferred |
 | 2026-10-02 | Build process: VISION.md → two subfolders, one per person → agents in parallel → an integration agent combining work continuously |
+| 2026-10-03 | #3: the unexplored minimap is Google dark mode; #6 heading-up and #7 faint route + pin confirmed |
+| 2026-10-03 | #8: arrival is the quiet "You found Bev" glass card, Done → home |
+| 2026-10-03 | #9: behind the Find Bev glass, an off-white field with two or three very soft, slowly drifting white and gray light shapes. No color |
+| 2026-10-03 | #10: "Finding Bev" is secondary-gray text with a brighter band sweeping through it |
+| 2026-10-03 | Find Bev → Finding Bev → Enable camera is one glass button that morphs; the "7-Eleven · 4 min" line fades in above it |
+| 2026-10-03 | Home is always light, whatever the phone's appearance setting. Status bar is black-translucent so the camera runs full-bleed |
+| 2026-10-03 | Minimap: rounded square, ~150 pt, ~150 m across, no labels or POIs. Google's logo and attribution stay fully visible (Maps Platform terms), so it isn't a circle |
+| 2026-10-03 | Heading smoothing and magnetic → true north correction move to the frontend (they're sensor input); `guide()` receives a smoothed true-north heading. The frontend owns reroute timing |
+| 2026-10-03 | New edge states: compass unusable, Precise Location off, no GPS fix, phone sideways. Motion "ask once more" is a reopen hint (iPhone can't re-prompt in the same session) |
+| 2026-10-03 | The guide's dashes flow with an SVG dash-offset animation (a paint, not a transform); fine for one path; to be verified at 60 fps on a real iPhone |
+| 2026-10-03 | No screen wake lock in v1 |
+| 2026-10-03 | Development builds use fixtures for `/api/find-bev` unless `?live=1`; production is live. Protects the Places free tier |
 
 ## References
 
