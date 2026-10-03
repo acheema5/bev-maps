@@ -44,3 +44,13 @@ export type Guidance = {
   offRoute: boolean; // true -> call /api/route
   arrived: boolean;
 };
+
+// One sample in a simulated walk: a fake GPS+heading reading at a point in time,
+// played back through the same code path as real sensors. See VISION.md >
+// "Technical shape" > Testing, and backend/core/sim.ts.
+export type SimSample = {
+  tMs: number; // milliseconds since the simulated walk started
+  position: LatLng;
+  accuracyM: number;
+  headingDeg: number; // where the back camera faces; 0 = north, clockwise
+};
