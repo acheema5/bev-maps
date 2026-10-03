@@ -1,0 +1,86 @@
+/* The one glass object on Home. It never leaves: its label morphs
+   Find Bev → Finding Bev → Enable camera (or Try again), and its width
+   springs to fit. The glass material itself is the global .glass class. */
+.button {
+  position: relative;
+  display: block;
+  height: 64px;
+  min-width: 180px;
+  padding: 0 34px;
+  border-radius: 32px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--label);
+  transition:
+    width 560ms var(--ease-spring),
+    transform 420ms var(--ease-spring);
+}
+
+.button:active:not([aria-disabled="true"]) {
+  transform: scale(0.96);
+  transition-duration: 560ms, 140ms;
+}
+
+.button[aria-disabled="true"] {
+  cursor: default;
+}
+
+/* All labels stack in the same spot and cross-fade. Opacity lives on the
+   outer span; the shimmer's background-clip text lives on the inner one, so
+   WebKit never has to composite clipped text on its own layer. */
+.label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 240ms var(--ease-out);
+}
+
+.label[data-active] {
+  opacity: 1;
+  transition-delay: 90ms;
+}
+
+/* Decision #10: secondary-gray letters with a band of light streaming
+   through them, like slide to unlock. The shimmer is the loading indicator. */
+.shimmer {
+  color: transparent;
+  background-image: linear-gradient(
+    100deg,
+    rgba(60, 60, 67, 0.55) 0%,
+    rgba(60, 60, 67, 0.55) 38%,
+    rgba(255, 255, 255, 0.98) 50%,
+    rgba(60, 60, 67, 0.55) 62%,
+    rgba(60, 60, 67, 0.55) 100%
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 1.7s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
+}
+
+/* Invisible copies of every label, measured once so width can animate. */
+.measure {
+  position: absolute;
+  visibility: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.measure > span {
+  display: inline-block;
+}

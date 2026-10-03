@@ -1,0 +1,58 @@
+/* VISION decision #9: off-white, with two or three very soft white and gray
+   light shapes drifting slowly behind the glass, so the glass has something
+   to bend. No color. Soft radial gradients, not filter: blur(); transforms
+   only for motion. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.light {
+  position: absolute;
+  border-radius: 50%;
+  animation: drift 52s ease-in-out infinite alternate;
+}
+
+/* A broad white glow, upper left, reaching past the center. */
+.one {
+  width: 150vmax;
+  height: 150vmax;
+  left: -78vmax;
+  top: -88vmax;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.55) 55%, rgba(255, 255, 255, 0));
+}
+
+/* A cool gray pool, lower right: the button sits on its edge. */
+.two {
+  width: 120vmax;
+  height: 120vmax;
+  right: -62vmax;
+  bottom: -58vmax;
+  background: radial-gradient(closest-side, rgba(200, 200, 208, 0.62), rgba(200, 200, 208, 0.25) 60%, rgba(200, 200, 208, 0));
+  animation-duration: 64s;
+  animation-direction: alternate-reverse;
+}
+
+/* A small bright highlight that wanders near the button. */
+.three {
+  width: 70vmax;
+  height: 70vmax;
+  left: -6vmax;
+  top: 18vh;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+  animation-duration: 44s;
+}
+
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6vmax, 4vmax, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(-4vmax, 8vmax, 0) scale(0.97);
+  }
+}

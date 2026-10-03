@@ -5,12 +5,13 @@
 export const GOOD_FIX_M = 50; // start searching as soon as accuracy is this good
 export const FIX_WAIT_MS = 8_000; // after this, settle for the best fix within FALLBACK_FIX_M
 export const FALLBACK_FIX_M = 100;
-export const FIX_GIVE_UP_MS = 15_000; // no usable fix by now → "no-fix" notice
-export const PRECISE_OFF_M = 500; // fixes this rough mean Precise Location is off
+export const FIX_GIVE_UP_MS = 15_000; // then use the best fix within GIVE_UP_FIX_M, or give up
+export const GIVE_UP_FIX_M = 500; // a rough start is fine: reroutes correct it as GPS settles
+export const PRECISE_OFF_M = 1_000; // every fix this rough after FIX_WAIT_MS → Precise Location is off
 
 // Finding Bev: the request.
 export const MIN_SHIMMER_MS = 800; // never flash the shimmer
-export const FIND_TIMEOUT_MS = 10_000;
+export const FIND_TIMEOUT_MS = 12_000; // server worst case is ~9 s plus a cold start
 export const ROUTE_TIMEOUT_MS = 10_000;
 
 // Navigate: rerouting. guide() reports offRoute instantly; timing is ours.
