@@ -60,7 +60,7 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
     let spots: FogSpots | null = null;
     let spotsCenter: Px | null = null;
     let routeWorld: { route: WalkingRoute | null; px: Px[] } = { route: null, px: [] };
-    let last = { x: NaN, y: NaN, heading: NaN, accuracy: NaN, points: null as readonly LatLng[] | null, route: null as WalkingRoute | null };
+    let last = { x: NaN, y: NaN, heading: NaN, compass: NaN as number | null, accuracy: NaN, points: null as readonly LatLng[] | null, route: null as WalkingRoute | null };
 
     const attach = (m: MinimapMaps) => {
       if (disposed) return;
@@ -83,9 +83,9 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
       lastFix.current = fix;
 
       zoom ??= zoomFor(fix.position.lat, size, size);
-      if (!requested) {
+      if (!requested && darkSlot.current && lightSlot.current) {
         requested = true;
-        getMinimapMaps(fix.position, zoom).then((m) => m && attach(m));
+        getMinimapMaps(fix.position, zoom, { dark: darkSlot.current, light: lightSlot.current }).then((m) => m && attach(m));
       }
 
       // When the loop stops (arrival) both go null: hold the last view still.
@@ -99,10 +99,12 @@ export function Minimap({ route, destination, live, headingUp, size }: Props) {
       const current = routeNow.current;
 
       const moved = Math.abs(center.x - last.x) > 0.25 || Math.abs(center.y - last.y) > 0.25;
-      const turned = Math.abs(((heading - last.heading + 540) % 360) - 180) > 0.5;
+      const angleMoved = (a: number, b: number | null) => b === null || Number.isNaN(b) || Math.abs(((a - b + 540) % 360) - 180) > 0.5;
+      // Heading-up: the map turns. North-up: the map holds still but the triangle turns with the compass.
+      const turned = angleMoved(heading, last.heading) || (compass === null ? last.compass !== null : angleMoved(compass, last.compass));
       if (!dirty && !moved && !turned && fix.accuracyM === last.accuracy && points === last.points && current === last.route) return;
       dirty = false;
-      last = { x: center.x, y: center.y, heading, accuracy: fix.accuracyM, points, route: current };
+      last = { x: center.x, y: center.y, heading, compass, accuracy: fix.accuracyM, points, route: current };
 
       if (maps) {
         const camera = { center: fix.position, heading, zoom };
