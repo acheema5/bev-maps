@@ -1,49 +1,106 @@
+/* Bev Maps design tokens. Always light (Home is the brand); the navigate
+   screen is the camera, so system appearance never matters. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: only light;
+
+  --bg: #f2f2f5;
+  --label: #1d1d1f;
+  --label-secondary: rgba(60, 60, 67, 0.6);
+  --label-on-dark: #fff;
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui,
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* A gentle spring (critically damped feel), for CSS transitions. */
+  --ease-spring: linear(
+    0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.281 6.7%, 0.723 13.6%, 0.88 16.6%, 0.938, 0.983 20.5%,
+    1.017 22.6%, 1.033 24.6%, 1.038 26.9%, 1.026 31.4%, 1.006 37.4%, 0.998 44.7%, 1
+  );
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html {
-  height: 100%;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html,
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--label);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-a {
+button {
+  font: inherit;
   color: inherit;
-  text-decoration: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+/* Glass, light: Home and its cards. White, a little gray toward the corners,
+   so it reads as a physical piece of glass. Never put opacity, filter, mask,
+   or will-change on an ancestor of a glass element: WebKit then stops the
+   blur at that ancestor. */
+.glass {
+  background:
+    radial-gradient(130% 150% at 50% 0%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.62) 55%,
+      rgba(232, 232, 237, 0.6) 100%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.035),
+    inset 0 0 0 0.5px rgba(0, 0, 0, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* Glass, smoky: small controls over the live camera. Keep these few and
+   small; every camera frame re-blurs what's behind them. */
+.glass-dark {
+  background: rgba(28, 28, 30, 0.38);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 4px 16px rgba(0, 0, 0, 0.22);
+  color: var(--label-on-dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

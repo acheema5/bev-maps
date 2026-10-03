@@ -1,69 +1,47 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useReducer, useState } from "react";
+import { DesktopGate } from "./components/shell/desktop-gate";
+import { InstallHint } from "./components/shell/install-hint";
+import { RotateOverlay } from "./components/shell/rotate-overlay";
+import { appReducer, initialState } from "./lib/app-state";
+import { detectDevice, readFlags, type Device, type Flags } from "./lib/env";
 import styles from "./page.module.css";
 
-export default function Home() {
+type Session = { flags: Flags; device: Device };
+
+// One screen that changes state: Home → Finding → Found → Navigate → Arrived,
+// plus edge states (VISION → The flow). See lib/app-state.ts.
+export default function BevMaps() {
+  const [state] = useReducer(appReducer, initialState);
+  // Flags and device only exist in the browser. Until they're known, render
+  // just the background, so a computer never flashes the Home screen.
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    // Reading the environment once after mount is a one-time sync from an
+    // external system, not derived state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSession({ flags: readFlags(window.location.search), device: detectDevice() });
+
+    // iOS ignores user-scalable=no; stop pinch-zoom by hand.
+    const stop = (e: Event) => e.preventDefault();
+    document.addEventListener("gesturestart", stop);
+    return () => document.removeEventListener("gesturestart", stop);
+  }, []);
+
+  if (!session) return <div className={styles.app} />;
+
+  const { flags, device } = session;
+  if (!device.isPhone && !flags.sim && !flags.debug) return <DesktopGate />;
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className={styles.app}>
+      <div className={styles.placeholder} data-screen={state.screen}>
+        {state.screen}
+      </div>
+      {state.screen === "home" && device.isIOS && !device.isStandalone && <InstallHint />}
+      <RotateOverlay />
     </div>
   );
 }
