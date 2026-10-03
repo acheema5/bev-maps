@@ -10,6 +10,10 @@
   "scripts": {
     "dev": "npm run dev --workspace frontend",
     "build": "npm run build --workspace frontend",
-    "start": "npm run start --workspace frontend"
+    "start": "npm run start --workspace frontend",
+    "typecheck": "tsc -p shared && tsc -p backend/core && tsc -p backend/server"
+  },
+  "devDependencies": {
+    "typescript": "^5"
   }
 }

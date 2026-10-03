@@ -321,7 +321,7 @@ bev-maps/
 
 One Vercel project. `frontend/` is the deployed app; its `/api/*` routes are thin wrappers around `backend/server/`. npm workspaces let `frontend/` import `shared/` and `backend/core/` directly. Keeping `server/` separate means no API key can leak into the phone's bundle.
 
-**Frontend: everything you see and touch** · owner: ______
+**Frontend: everything you see and touch** · owner: Matt (@mbwiller)
 
 - Find Bev, the Finding Bev shimmer, the Found screen, arrival, and edge states
 - Full-screen rear camera and the animated four-state guide
@@ -329,7 +329,7 @@ One Vercel project. `frontend/` is the deployed app; its `/api/*` routes are thi
 - Sensors and permissions: reads raw GPS, compass, and camera, and hands values to `backend/core/`
 - Home Screen shell: manifest, icon, standalone mode, safe areas, install hint
 
-**Backend: everything that finds, routes, and computes** · owner: ______
+**Backend: everything that finds, routes, and computes** · owner: Arjun (@acheema5)
 
 - `/api/find-bev` and `/api/route`: candidate search, open-now and open-on-arrival filters, walking-time ranking, routing
 - Google Maps Platform keys, field masks, budget alert
