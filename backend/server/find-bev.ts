@@ -4,6 +4,8 @@ import {
   computeRoutes,
   haversineDistanceM,
   isValidLatLng,
+  LONG_HOURS_PLACE_TYPES,
+  MAX_RESULT_COUNT,
   searchNearby,
   type PlaceCandidate,
 } from "./google-client";
@@ -39,7 +41,15 @@ export async function findBev(request: FindBevRequest): Promise<FindBevResponse>
     }
 
     const candidates = await searchNearby(apiKey, request.origin, SEARCH_RADIUS_M);
-    const openNow = candidates.filter((c) => c.openNow);
+    let openNow = candidates.filter((c) => c.openNow);
+
+    // A full page with nothing open usually means the nearest places are
+    // cafés and bakeries closed for the night. Look again for stores only,
+    // so a 24-hour pharmacy just past the first page still wins.
+    if (openNow.length === 0 && candidates.length >= MAX_RESULT_COUNT) {
+      const stores = await searchNearby(apiKey, request.origin, SEARCH_RADIUS_M, LONG_HOURS_PLACE_TYPES);
+      openNow = stores.filter((c) => c.openNow);
+    }
 
     if (openNow.length > 0) {
       const shortlist = nearestN(request.origin, openNow, SHORTLIST_SIZE);
